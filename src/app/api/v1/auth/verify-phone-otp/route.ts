@@ -10,7 +10,7 @@ export async function POST(req: Request) {
       success: true,
       message: "Phone number successfully verified",
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Invalid request payload" }, { status: 400 });
   }
 }

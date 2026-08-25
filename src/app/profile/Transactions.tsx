@@ -9,8 +9,7 @@ import {
   Clock, 
   Truck, 
   AlertCircle,
-  Copy,
-  Loader2
+  Copy
 } from "lucide-react";
 import { getBuyerTransactions, BuyerTransactionItem } from "@/services/profileApi";
 

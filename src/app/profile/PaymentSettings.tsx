@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, MapPin, CreditCard as CreditCardIcon, X, CheckCircle2, MoreVertical, Loader2, Trash2 } from "lucide-react";
+import { Plus, MapPin, CreditCard as CreditCardIcon, X, CheckCircle2, Loader2, Trash2 } from "lucide-react";
 import { 
   getUserAddresses, 
   addUserAddress, 
@@ -101,7 +101,7 @@ export default function PaymentSettings() {
       setCards([...cards, createdCard]);
       setIsCardModalOpen(false);
       setNewCard({ cardholderName: "", cardNumber: "", expiry: "", cvv: "" });
-    } catch (err) {
+    } catch {
       alert("เกิดข้อผิดพลาดในการเชื่อมต่อบัตรเครดิต");
     } finally {
       setIsSavingCard(false);
@@ -141,15 +141,14 @@ export default function PaymentSettings() {
       setAddresses([...addresses, created]);
       setIsAddressModalOpen(false);
       setNewAddr({ name: "", phone: "", street: "", subdistrict: "", district: "", province: "", postalCode: "" });
-    } catch (err) {
+    } catch {
       alert("เกิดข้อผิดพลาดในการเพิ่มที่อยู่");
     } finally {
       setIsSavingAddress(false);
     }
   };
 
-  const defaultCard = cards.find(c => c.isDefault) || cards[0];
-  const defaultAddress = addresses.find(a => a.isDefault) || addresses[0];
+
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">

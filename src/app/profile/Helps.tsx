@@ -114,7 +114,7 @@ export default function Helps() {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
-    } catch (err) {
+    } catch {
       alert("เกิดข้อผิดพลาดในการส่งข้อความ กรุณาลองใหม่อีกครั้ง");
     } finally {
       setIsSubmitting(false);

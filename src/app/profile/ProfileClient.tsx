@@ -7,10 +7,8 @@ import Transactions from "./Transactions";
 import Helps from "./Helps";
 import { 
   getUserProfile, 
-  updateUserProfile, 
   uploadAvatarImage, 
   submitKYCDocument,
-  sendEmailVerificationLink,
   verifyPhoneOTPCode,
   UserProfile 
 } from "@/services/profileApi";
@@ -65,7 +63,7 @@ export default function ProfileClient() {
         setIsLoading(true);
         const data = await getUserProfile();
         setProfile(data);
-      } catch (err) {
+      } catch {
         showToast("Error loading user profile");
       } finally {
         setIsLoading(false);
@@ -87,7 +85,7 @@ export default function ProfileClient() {
           setProfile({ ...profile, avatarUrl: newAvatarUrl });
         }
         showToast("Avatar image uploaded successfully!");
-      } catch (err) {
+      } catch {
         showToast("Failed to upload avatar image");
       } finally {
         setIsUploadingAvatar(false);
@@ -110,7 +108,7 @@ export default function ProfileClient() {
       setShowPhoneModal(false);
       setOtpCode("");
       showToast("ยืนยันเบอร์โทรศัพท์เรียบร้อยแล้ว!");
-    } catch (err) {
+    } catch {
       showToast("รหัส OTP ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง");
     } finally {
       setIsVerifyingOtp(false);
@@ -127,7 +125,7 @@ export default function ProfileClient() {
           setProfile({ ...profile, kycStatus: "Pending" });
         }
         showToast("ยื่นเอกสารยืนยันตัวตนเรียบร้อยแล้ว อยู่ระหว่างตรวจสอบ");
-      } catch (err) {
+      } catch {
         showToast("เกิดข้อผิดพลาดในการยื่นเอกสาร");
       } finally {
         setIsSubmittingKYC(false);
@@ -206,9 +204,12 @@ export default function ProfileClient() {
                     {/* Avatar with Squircle & Badge */}
                     <div className="relative shrink-0">
                       <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-[2rem] bg-[#FEF9C3] overflow-hidden flex items-center justify-center p-2 shadow-inner border border-yellow-200 relative">
-                        <img
+                        <Image
                           src={profile?.avatarUrl || "https://api.dicebear.com/7.x/bottts/svg?seed=PandaMon"}
                           alt="User Avatar"
+                          width={128}
+                          height={128}
+                          unoptimized
                           className="w-full h-full object-cover rounded-[1.5rem]"
                         />
                         {isUploadingAvatar && (

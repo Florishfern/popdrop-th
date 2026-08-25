@@ -22,7 +22,7 @@ export async function POST(req: Request) {
       isDefault: false,
       token,
     }, { status: 201 });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Invalid request payload" }, { status: 400 });
   }
 }

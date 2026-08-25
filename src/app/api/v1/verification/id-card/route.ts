@@ -11,7 +11,7 @@ export async function POST(req: Request) {
       message: "Identity document submitted for verification",
       status: "Pending",
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Invalid request payload" }, { status: 400 });
   }
 }

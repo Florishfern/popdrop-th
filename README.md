@@ -1,3 +1,7 @@
+# popdrop-th
+PopDropTH: A cloud computing class project featuring an e-commerce platform deployed on AWS via IaC. Integrated with DevOps automation and Chaos Engineering experiments.
+
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

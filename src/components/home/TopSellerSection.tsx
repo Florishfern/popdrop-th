@@ -1,6 +1,7 @@
 "use client";
 
 import { BadgeCheck, MoreHorizontal } from "lucide-react";
+import Image from "next/image";
 
 const sellers = [
   { id: 1, name: "PandaMon_35", seed: "Panda", color: "bg-yellow-100", sales: "฿16,786.75", salesCount: 150 },
@@ -34,9 +35,12 @@ export default function TopSellerSection() {
             {/* Left: Avatar Squircle */}
             <div className="relative shrink-0">
               <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl ${seller.color} flex items-end justify-center overflow-hidden shadow-sm group-hover:shadow-md transition-shadow`}>
-                <img 
+                <Image 
                   src={`https://api.dicebear.com/7.x/micah/svg?seed=${seller.seed}&backgroundColor=transparent`} 
                   alt={seller.name}
+                  width={80}
+                  height={80}
+                  unoptimized
                   className="w-full h-full object-cover translate-y-1 group-hover:scale-110 transition-transform duration-300"
                 />
               </div>

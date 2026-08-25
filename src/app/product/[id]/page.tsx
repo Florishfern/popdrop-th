@@ -2,7 +2,7 @@
 
 import { useEffect, useState, use } from "react";
 import Image from "next/image";
-import Link from "next/link";
+
 import { ArrowLeft, Sparkles } from "lucide-react";
 import Tilt from "react-parallax-tilt";
 import Spline from "@splinetool/react-spline";

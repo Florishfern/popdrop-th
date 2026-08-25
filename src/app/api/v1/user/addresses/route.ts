@@ -35,7 +35,7 @@ export async function POST(req: Request) {
       ...body,
     };
     return NextResponse.json(newAddress, { status: 201 });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Invalid request payload" }, { status: 400 });
   }
 }

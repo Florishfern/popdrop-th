@@ -18,7 +18,7 @@ export async function POST(req: Request) {
       message: "Ticket created and confirmation email dispatched",
       details: { topic, description, attachmentUrl },
     }, { status: 201 });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Invalid request payload" }, { status: 400 });
   }
 }

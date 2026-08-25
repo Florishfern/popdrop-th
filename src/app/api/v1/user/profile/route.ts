@@ -27,7 +27,7 @@ export async function PUT(req: Request) {
       message: "Profile updated successfully",
       profile: body,
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Invalid request payload" }, { status: 400 });
   }
 }

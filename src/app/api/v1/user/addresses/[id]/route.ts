@@ -12,7 +12,7 @@ export async function PUT(
       message: `Address ${id} updated`,
       address: { id, ...body },
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Invalid request payload" }, { status: 400 });
   }
 }
