@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import PaymentSettings from "./PaymentSettings";
 import Helps from "./Helps";
+import Transactions from "./Transactions";
 import { signOut } from "next-auth/react";
 import { 
   getUserProfile, 
