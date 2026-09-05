@@ -1,0 +1,194 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// NextAuth Required Models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Popdrop Business Models
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?   // profile picture
+  password_hash String?   // For credential login
+
+  accounts      Account[]
+  sessions      Session[]
+  addresses     Address[]
+  creditCards   CreditCard[]
+  sellerInfo    SellerInfo?
+  products      Product[]
+  bids          Bid[]
+  transactionsBuy Transaction[] @relation("Buyer")
+  transactionsSell Transaction[] @relation("Seller")
+  notifications Notification[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Address {
+  id           String  @id @default(cuid())
+  userId       String
+  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  addressLine  String
+  city         String
+  country      String
+  isDefault    Boolean @default(false)
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model CreditCard {
+  id             String  @id @default(cuid())
+  userId         String
+  user           User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastFourDigits String
+  brand          String
+  token          String  // e.g., Stripe/Omise token
+  isDefault      Boolean @default(false)
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model SellerInfo {
+  id                 String  @id @default(cuid())
+  userId             String  @unique
+  user               User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isVerifiedDocument Boolean @default(false)
+  hasTopSellerBadge  Boolean @default(false)
+  totalSalesCount    Int     @default(0)
+  bankName           String?
+  bankAccountNo      String?
+
+  payouts            Payout[]
+  
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model Product {
+  id                         String  @id @default(cuid())
+  sellerId                   String
+  seller                     User    @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  title                      String
+  description                String
+  startPrice                 Float
+  currentPrice               Float
+  endTime                    DateTime
+  status                     String  @default("DRAFT") // DRAFT, LIVE, ENDED, SOLD
+  allowInternationalShipping Boolean @default(false)
+  
+  images                     ProductImage[]
+  bids                       Bid[]
+  transaction                Transaction?
+  
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  imageUrl  String
+  sortOrder Int     @default(0)
+  
+  createdAt DateTime @default(now())
+}
+
+model Bid {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  bidderId  String
+  bidder    User     @relation(fields: [bidderId], references: [id], onDelete: Cascade)
+  amount    Float
+  
+  createdAt DateTime @default(now())
+}
+
+model Transaction {
+  id        String   @id @default(cuid())
+  productId String   @unique
+  product   Product  @relation(fields: [productId], references: [id])
+  buyerId   String
+  buyer     User     @relation("Buyer", fields: [buyerId], references: [id])
+  sellerId  String
+  seller    User     @relation("Seller", fields: [sellerId], references: [id])
+  amount    Float
+  status    String   @default("PENDING") // PENDING, PAID, SHIPPED
+  
+  payouts   Payout[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Payout {
+  id            String      @id @default(cuid())
+  sellerInfoId  String
+  sellerInfo    SellerInfo  @relation(fields: [sellerInfoId], references: [id])
+  transactionId String
+  transaction   Transaction @relation(fields: [transactionId], references: [id])
+  amount        Float
+  status        String      @default("PENDING") // PENDING, TRANSFERRED
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   // LIVE, BID, WON, INFO
+  isRead    Boolean  @default(false)
+  
+  createdAt DateTime @default(now())
+}
