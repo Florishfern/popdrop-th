@@ -136,7 +136,7 @@ export default function LoginPage() {
         </div>
         
         <div className="bg-gray-50 py-4 px-8 text-center text-sm">
-          <span className="text-gray-500">Don't have an account? </span>
+          <span className="text-gray-500">Don&apos;t have an account? </span>
           <Link href="/signup" className="text-[var(--color-pop-red)] font-semibold hover:underline">
             Sign up now
           </Link>
