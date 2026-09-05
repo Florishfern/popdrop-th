@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import PaymentSettings from "./PaymentSettings";
-import Transactions from "./Transactions";
 import Helps from "./Helps";
+import { signOut } from "next-auth/react";
 import { 
   getUserProfile, 
   uploadAvatarImage, 
@@ -19,6 +19,7 @@ import {
   ArrowRightLeft, 
   LifeBuoy, 
   Trash2,
+  LogOut,
   Pencil,
   BadgeCheck,
   Mail,
@@ -176,7 +177,18 @@ export default function ProfileClient() {
         </nav>
 
         {/* Danger Zone */}
-        <div className="mt-8">
+        <div className="mt-8 space-y-2">
+          <button 
+            onClick={async () => {
+              await signOut({ redirect: false });
+              window.location.href = "/";
+            }}
+            className="flex items-center gap-3 px-4 py-3 w-full rounded-2xl text-sm font-bold text-neutral-600 hover:bg-neutral-100 transition-colors group"
+          >
+            <LogOut size={18} strokeWidth={2.5} className="text-neutral-400 group-hover:text-neutral-600 transition-colors" />
+            Sign out
+          </button>
+          
           <button className="flex items-center gap-3 px-4 py-3 w-full rounded-2xl text-sm font-bold text-red-500 hover:bg-red-50 transition-colors group">
             <Trash2 size={18} strokeWidth={2.5} className="text-red-400 group-hover:text-red-500 transition-colors" />
             Delete account

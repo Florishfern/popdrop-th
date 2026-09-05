@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
+import Link from "next/link";
 
 export default function Hero() {
   return (
@@ -19,9 +20,9 @@ export default function Hero() {
         </p>
 
         <div className="animate-fade-up-delay-3 mt-8 sm:mt-10">
-          <button className="bg-[var(--color-pop-red)] hover:bg-[var(--color-pop-red-hover)] text-white px-12 sm:px-16 py-3 sm:py-3.5 rounded-xl text-sm sm:text-base font-bold tracking-wider lowercase transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-red-500/30">
+          <Link href="/signup" className="inline-block bg-[var(--color-pop-red)] hover:bg-[var(--color-pop-red-hover)] text-white px-12 sm:px-16 py-3 sm:py-3.5 rounded-xl text-sm sm:text-base font-bold tracking-wider lowercase transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-red-500/30">
             sign up
-          </button>
+          </Link>
         </div>
       </div>
 

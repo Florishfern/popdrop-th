@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { X, User, Search, Bell, CheckCircle, Package, Gavel } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSession } from "next-auth/react";
 
 const navLinks = [
   { name: "home", href: "/" },
@@ -86,6 +87,7 @@ const initialNotifications = [
 ];
 
 export default function Navbar() {
+  const { data: session } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [viewAll, setViewAll] = useState(false);
@@ -259,10 +261,16 @@ export default function Navbar() {
             </AnimatePresence>
           </div>
 
-          {/* User Profile */}
-          <Link href="/profile" className="w-10 h-10 rounded-full bg-black hover:bg-neutral-800 flex items-center justify-center text-white transition-all active:scale-95 shrink-0 shadow-sm">
-            <User size={18} />
-          </Link>
+          {/* User Profile / Sign In */}
+          {session ? (
+            <Link href="/profile" className="w-10 h-10 rounded-full bg-black hover:bg-neutral-800 flex items-center justify-center text-white transition-all active:scale-95 shrink-0 shadow-sm">
+              <User size={18} />
+            </Link>
+          ) : (
+            <Link href="/login" className="px-4 py-2 rounded-full bg-black hover:bg-neutral-800 text-white text-sm font-semibold transition-all active:scale-95 shrink-0 shadow-sm">
+              Sign In
+            </Link>
+          )}
         </div>
 
         {/* Mobile Menu Toggle */}
@@ -348,9 +356,15 @@ export default function Navbar() {
                     )}
                   </button>
                 </div>
-                <Link href="/profile" onClick={() => setMenuOpen(false)} className="w-12 h-12 rounded-full bg-neutral-200 flex items-center justify-center text-black">
-                  <User size={24} />
-                </Link>
+                {session ? (
+                  <Link href="/profile" onClick={() => setMenuOpen(false)} className="w-12 h-12 rounded-full bg-neutral-200 flex items-center justify-center text-black">
+                    <User size={24} />
+                  </Link>
+                ) : (
+                  <Link href="/login" onClick={() => setMenuOpen(false)} className="px-6 py-3 rounded-full bg-black text-white font-semibold">
+                    Sign In
+                  </Link>
+                )}
               </motion.div>
             </div>
           </motion.div>
