@@ -10,14 +10,14 @@ resource "aws_db_subnet_group" "rds_subnet_group" {
 resource "aws_db_instance" "popdrop_db" {
   identifier           = "popdrop-db"
   engine               = "mysql"
-  engine_version       = "8.0"
+  engine_version       = "8.4"
   instance_class       = "db.t3.micro"
   allocated_storage    = 20
   storage_type         = "gp2"
   db_name              = "popdropdb"
   username             = var.db_username
   password             = var.db_password
-  parameter_group_name = "default.mysql8.0"
+  parameter_group_name = "default.mysql8.4"
   skip_final_snapshot  = true # Set to false in real production
   publicly_accessible  = false
 
