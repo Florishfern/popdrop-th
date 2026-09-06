@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { X, User, Search, Bell, CheckCircle, Package, Gavel } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSession } from "next-auth/react";
@@ -88,12 +88,24 @@ const initialNotifications = [
 
 export default function Navbar() {
   const { data: session } = useSession();
+  const router = useRouter();
+  const pathname = usePathname();
+  const [searchQuery, setSearchQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [viewAll, setViewAll] = useState(false);
   const [notifications, setNotifications] = useState(initialNotifications);
-  const pathname = usePathname();
   const notificationRef = useRef<HTMLDivElement>(null);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/market?search=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      router.push("/market");
+    }
+    setMenuOpen(false);
+  };
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -159,15 +171,7 @@ export default function Navbar() {
 
         {/* Right: Desktop Actions */}
         <div className="hidden md:flex items-center gap-3">
-          {/* Search Bar */}
-          <div className="flex items-center gap-2.5 bg-white border-2 border-neutral-300 shadow-sm px-4 py-2 rounded-full text-xs text-black w-48 lg:w-60 focus-within:w-72 focus-within:border-black focus-within:ring-2 focus-within:ring-black/10 transition-all">
-            <Search size={18} className="text-black shrink-0" />
-            <input 
-              type="text" 
-              placeholder="Search products..." 
-              className="bg-transparent border-none outline-none w-full text-xs font-medium text-black placeholder:text-neutral-500"
-            />
-          </div>
+          {/* Search Bar Removed */}
 
           {/* Notification Bell */}
           <div className="relative" ref={notificationRef}>
@@ -301,15 +305,7 @@ export default function Navbar() {
             className="fixed inset-0 z-40 bg-white/95 backdrop-blur-md flex flex-col items-center justify-center pt-20"
           >
             <div className="flex flex-col items-center gap-6 w-full px-6 max-w-sm">
-              {/* Mobile Search Bar */}
-              <div className="flex items-center gap-2.5 bg-white border-2 border-neutral-300 shadow-sm px-4 py-3 rounded-full text-sm text-black w-full mb-2 focus-within:border-black">
-                <Search size={18} className="text-black shrink-0" />
-                <input 
-                  type="text" 
-                  placeholder="Search products..." 
-                  className="bg-transparent border-none outline-none w-full text-sm font-medium text-black placeholder:text-neutral-500"
-                />
-              </div>
+              {/* Mobile Search Bar Removed */}
 
               {navLinks.map((link, i) => {
                 const isActive = pathname === link.href;
