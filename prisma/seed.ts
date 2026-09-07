@@ -7,6 +7,12 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('Seeding database with faker.js...');
 
+  // Clean the database first
+  console.log('Clearing existing data...');
+  await prisma.bid.deleteMany({});
+  await prisma.product.deleteMany({});
+  await prisma.user.deleteMany({});
+
   // Create a real bcrypt hash for 'password123' so you can actually log in!
   const defaultPasswordHash = bcrypt.hashSync('password123', 10);
 
