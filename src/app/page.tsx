@@ -3,10 +3,44 @@ import Hero from "@/components/home/Hero";
 import ProductCard from "@/components/product/ProductCard";
 import FeaturedCategories from "@/components/home/FeaturedCategories";
 import TopSellerSection from "@/components/home/TopSellerSection";
-import { fetchProducts } from "@/services/api";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+export const dynamic = 'force-dynamic';
+
+async function getProductsForHome() {
+  const products = await prisma.product.findMany({
+    where: { status: { not: "DRAFT" } },
+    orderBy: { createdAt: 'desc' },
+    take: 8,
+    include: {
+      images: { orderBy: { sortOrder: 'asc' }, take: 1 },
+      seller: { select: { name: true, image: true, id: true } },
+      _count: { select: { bids: true } }
+    }
+  });
+
+  return products.map((p) => ({
+    id: p.id,
+    title: p.title,
+    description: p.description,
+    currentBid: p.currentPrice,
+    price: p.startPrice,
+    minBidStep: 100,
+    endTime: p.endTime.toISOString(),
+    status: p.status,
+    isAuction: true,
+    imageUrl: p.images.length > 0 ? p.images[0].imageUrl : "https://via.placeholder.com/300",
+    category: "Art Toys",
+    sellerName: p.seller?.name || "Unknown Seller",
+    sellerAvatar: p.seller?.image || "https://via.placeholder.com/50",
+    viewsCount: 0,
+    likesCount: p._count.bids
+  }));
+}
 
 export default async function Home() {
-  const products = await fetchProducts();
+  const products = await getProductsForHome();
 
   return (
     <main className="min-h-screen w-full flex flex-col items-center">
