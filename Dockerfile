@@ -30,6 +30,8 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXTAUTH_SECRET=popdrop_super_secret_key_12345
+ENV NEXTAUTH_URL=https://dt9l4fi7fxek3.cloudfront.net
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
