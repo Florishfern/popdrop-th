@@ -48,8 +48,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
-# Install prisma CLI for db push
-RUN npm install -g prisma@5.22.0
+# Install prisma CLI for db push and set permissions
+RUN npm install -g prisma@5.22.0 && \
+    chown -R nextjs:nodejs /usr/local/lib/node_modules/prisma && \
+    chown -R nextjs:nodejs /usr/local/bin/prisma
 
 USER nextjs
 
@@ -59,4 +61,4 @@ ENV PORT=3000
 
 # server.js is created by next build from the standalone output
 # Run prisma db push before starting the server
-CMD npx prisma db push --accept-data-loss && node server.js
+CMD npx prisma db push --accept-data-loss --skip-generate && node server.js
