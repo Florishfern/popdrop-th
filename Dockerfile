@@ -54,5 +54,5 @@ EXPOSE 3000
 ENV PORT=3000
 
 # server.js is created by next build from the standalone output
-# Run prisma db push and seed before starting the server
-CMD npx prisma db push --accept-data-loss && npx prisma db seed && node server.js
+# Run prisma db push before starting the server
+CMD npx prisma db push --accept-data-loss && node server.js
