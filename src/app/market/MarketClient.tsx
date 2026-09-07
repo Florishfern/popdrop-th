@@ -18,6 +18,7 @@ function MarketplaceContent() {
   // State
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isFiltering, setIsFiltering] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState(initialSearch);
@@ -44,7 +45,10 @@ function MarketplaceContent() {
   );
 
   const fetchProductsFromApi = useCallback(async () => {
-    setLoading(true);
+    // Only set main loading if we have no products yet
+    if (products.length === 0) setLoading(true);
+    else setIsFiltering(true);
+    
     setError(null);
 
     try {
@@ -64,8 +68,9 @@ function MarketplaceContent() {
       setError("Unable to load products. Please check your network connection.");
     } finally {
       setLoading(false);
+      setIsFiltering(false);
     }
-  }, [searchTerm, category, sortOption]);
+  }, [searchTerm, category, sortOption, products.length]);
 
   // Sync state from URL when URL searchParams change
   useEffect(() => {
@@ -248,7 +253,7 @@ function MarketplaceContent() {
           </div>
         ) : products.length > 0 ? (
           /* Product Card Grid */
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+          <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 transition-opacity duration-300 ${isFiltering ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
             {products.map((product) => (
               <div key={product.id} className="h-full">
                 <ProductCard
