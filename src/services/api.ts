@@ -63,7 +63,7 @@ let mockBidHistory: BidHistory[] = [
   { id: '2', productId: '1', username: 'crypto_king', bidAmount: 5400, timestamp: new Date().toISOString() },
 ];
 
-const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK !== "false";
+const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === "true";
 
 const getAuthHeaders = (): Record<string, string> => {
   const token = typeof window !== "undefined" ? localStorage.getItem("popdrop_token") : null;
