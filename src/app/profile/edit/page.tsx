@@ -42,8 +42,8 @@ export default function EditProfilePage() {
   const fetchData = async () => {
     try {
       const [profileRes, addressRes] = await Promise.all([
-        fetch("/api/v1/user/profile"),
-        fetch("/api/v1/user/address")
+        fetch("/api/v1/user/profile", { cache: "no-store" }),
+        fetch("/api/v1/user/address", { cache: "no-store" })
       ]);
 
       if (profileRes.ok) {
