@@ -92,7 +92,7 @@ resource "aws_ecs_task_definition" "app" {
   cpu                      = "256"
   memory                   = "512"
   execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
-  task_role_arn            = aws_iam_role.ecs_task_execution_role.arn
+  task_role_arn            = aws_iam_role.ecs_task_role.arn
 
   container_definitions = jsonencode([
     {
@@ -120,6 +120,18 @@ resource "aws_ecs_task_definition" "app" {
         {
           name  = "DATABASE_URL"
           value = "mysql://${var.db_username}:${var.db_password}@${aws_db_instance.popdrop_db.endpoint}/popdropdb"
+        },
+        {
+          name  = "S3_UPLOAD_BUCKET"
+          value = aws_s3_bucket.assets_bucket.bucket
+        },
+        {
+          name  = "NEXT_PUBLIC_CLOUDFRONT_URL"
+          value = "https://${aws_cloudfront_distribution.cdn.domain_name}"
+        },
+        {
+          name  = "AWS_REGION"
+          value = var.aws_region
         }
       ]
     }

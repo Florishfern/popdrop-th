@@ -11,6 +11,18 @@ resource "aws_s3_bucket" "assets_bucket" {
   }
 }
 
+resource "aws_s3_bucket_cors_configuration" "assets_bucket_cors" {
+  bucket = aws_s3_bucket.assets_bucket.id
+
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["PUT", "POST", "GET", "HEAD"]
+    allowed_origins = ["*"]
+    expose_headers  = ["ETag"]
+    max_age_seconds = 3000
+  }
+}
+
 resource "aws_s3_bucket_public_access_block" "assets_bucket_pab" {
   bucket = aws_s3_bucket.assets_bucket.id
 

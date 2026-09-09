@@ -132,3 +132,46 @@ resource "aws_iam_instance_profile" "ecs_instance_profile" {
   name = "popdrop-ecs-instance-profile"
   role = aws_iam_role.ecs_instance_role.name
 }
+
+# IAM Role for ECS Task (Container permissions)
+resource "aws_iam_role" "ecs_task_role" {
+  name = "popdrop-ecs-task-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_policy" "ecs_task_s3_policy" {
+  name        = "popdrop-ecs-task-s3-policy"
+  description = "Allow ECS tasks to upload files to S3"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject",
+          "s3:GetObject",
+          "s3:DeleteObject"
+        ]
+        Resource = "${aws_s3_bucket.assets_bucket.arn}/*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_task_s3_policy_attachment" {
+  role       = aws_iam_role.ecs_task_role.name
+  policy_arn = aws_iam_policy.ecs_task_s3_policy.arn
+}
