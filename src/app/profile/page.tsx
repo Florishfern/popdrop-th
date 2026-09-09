@@ -5,8 +5,8 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import Navbar from "@/components/Navbar";
-import { FiEdit2, FiMapPin, FiMail, FiUser, FiPackage, FiAward } from "react-line-icons/icons";
+import Navbar from "@/components/layout/Navbar";
+import { Edit2, MapPin, Mail, User, Package, Award } from "lucide-react";
 
 interface Profile {
   name: string;
@@ -90,7 +90,7 @@ export default function ProfilePage() {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-4xl text-slate-500">
-                    <FiUser />
+                    <User />
                   </div>
                 )}
               </div>
@@ -98,7 +98,7 @@ export default function ProfilePage() {
                 href="/profile/edit"
                 className="absolute bottom-0 right-0 w-10 h-10 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110"
               >
-                <FiEdit2 />
+                <Edit2 />
               </Link>
             </div>
 
@@ -107,12 +107,12 @@ export default function ProfilePage() {
               <h1 className="text-3xl font-bold text-white mb-2">{profile?.name || "User"}</h1>
               <div className="flex flex-col md:flex-row gap-4 text-slate-400 items-center md:items-start justify-center md:justify-start">
                 <div className="flex items-center gap-2">
-                  <FiMail className="text-indigo-400" />
+                  <Mail className="text-indigo-400" />
                   <span>{profile?.email}</span>
                 </div>
                 {address && (
                   <div className="flex items-center gap-2">
-                    <FiMapPin className="text-rose-400" />
+                    <MapPin className="text-rose-400" />
                     <span>{address.city}, {address.country}</span>
                   </div>
                 )}
@@ -136,7 +136,7 @@ export default function ProfilePage() {
           <div className="bg-slate-800/40 border border-slate-700/50 rounded-3xl p-8 backdrop-blur-md">
             <h2 className="text-xl font-semibold mb-6 flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-rose-500/20 flex items-center justify-center text-rose-400">
-                <FiMapPin />
+                <MapPin />
               </div>
               Shipping Address
             </h2>
@@ -162,7 +162,7 @@ export default function ProfilePage() {
           <div className="bg-slate-800/40 border border-slate-700/50 rounded-3xl p-8 backdrop-blur-md">
             <h2 className="text-xl font-semibold mb-6 flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400">
-                <FiAward />
+                <Award />
               </div>
               Recent Activity
             </h2>
@@ -170,7 +170,7 @@ export default function ProfilePage() {
             <div className="space-y-4">
               <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-700/30">
                 <div className="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400">
-                  <FiPackage />
+                  <Package />
                 </div>
                 <div>
                   <p className="text-white font-medium">Won Auction</p>
@@ -179,7 +179,7 @@ export default function ProfilePage() {
               </div>
               <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-700/30">
                 <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-400">
-                  <FiAward />
+                  <Award />
                 </div>
                 <div>
                   <p className="text-white font-medium">Placed Bid</p>

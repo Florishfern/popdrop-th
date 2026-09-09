@@ -5,8 +5,8 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import Navbar from "@/components/Navbar";
-import { FiCamera, FiSave, FiArrowLeft, FiLock } from "react-line-icons/icons";
+import Navbar from "@/components/layout/Navbar";
+import { Camera, Save, ArrowLeft, Lock } from "lucide-react";
 
 export default function EditProfilePage() {
   const { data: session, status, update } = useSession();
@@ -173,7 +173,7 @@ export default function EditProfilePage() {
       <main className="max-w-3xl mx-auto px-6 py-12 pt-32">
         <div className="mb-8 flex items-center gap-4">
           <Link href="/profile" className="p-2 bg-slate-800 hover:bg-slate-700 rounded-full transition-colors">
-            <FiArrowLeft className="text-xl" />
+            <ArrowLeft className="text-xl" />
           </Link>
           <h1 className="text-3xl font-bold">Edit Profile</h1>
         </div>
@@ -202,7 +202,7 @@ export default function EditProfilePage() {
                     onClick={() => fileInputRef.current?.click()}
                     className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                   >
-                    <FiCamera className="text-2xl text-white" />
+                    <Camera className="text-2xl text-white" />
                   </div>
                 </div>
                 <input 
@@ -290,7 +290,7 @@ export default function EditProfilePage() {
                 {saving ? (
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 ) : (
-                  <FiSave />
+                  <Save />
                 )}
                 Save Profile
               </button>
@@ -300,7 +300,7 @@ export default function EditProfilePage() {
           {/* Change Password Form */}
           <form onSubmit={handleChangePassword} className="bg-slate-800/40 border border-slate-700/50 rounded-3xl p-8 backdrop-blur-md">
             <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
-              <FiLock className="text-indigo-400" />
+              <Lock className="text-indigo-400" />
               Security
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
