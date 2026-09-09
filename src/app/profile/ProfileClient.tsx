@@ -136,9 +136,9 @@ export default function ProfileClient() {
       try {
         setIsSavingPersonal(true);
         const payload = {
-          firstName: editForm.firstName,
-          lastName: editForm.lastName,
-          phone: editForm.phone,
+          firstName: editForm.firstName || "",
+          lastName: editForm.lastName || "",
+          phone: editForm.phone || "",
         };
         await updateUserProfile(payload);
         setProfile((prev) => prev ? { ...prev, ...payload } : prev);
@@ -166,9 +166,9 @@ export default function ProfileClient() {
       try {
         setIsSavingAddress(true);
         const payload = {
-          country: editForm.country,
-          cityState: editForm.cityState,
-          postalCode: editForm.postalCode,
+          country: editForm.country || "",
+          cityState: editForm.cityState || "",
+          postalCode: editForm.postalCode || "",
         };
         await updateUserProfile(payload);
         setProfile((prev) => prev ? { ...prev, ...payload } : prev);
