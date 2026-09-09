@@ -57,7 +57,7 @@ export interface SupportTicketPayload {
   attachmentUrl?: string | null;
 }
 
-const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK !== "false";
+const USE_MOCK = false;
 
 const getAuthHeaders = (): Record<string, string> => {
   const token = typeof window !== "undefined" ? localStorage.getItem("popdrop_token") : null;
@@ -91,43 +91,126 @@ export async function getUserProfile(): Promise<UserProfile> {
     };
   }
 
-  const res = await fetch("/api/v1/user/profile", {
-    headers: getAuthHeaders(),
-  });
-  if (!res.ok) throw new Error("Failed to fetch user profile");
-  return res.json();
+  const [profileRes, addressRes] = await Promise.all([
+    fetch("/api/v1/user/profile", { headers: getAuthHeaders(), cache: "no-store" }),
+    fetch("/api/v1/user/address", { headers: getAuthHeaders(), cache: "no-store" })
+  ]);
+  
+  if (!profileRes.ok) throw new Error("Failed to fetch user profile");
+  const userData = await profileRes.json();
+  
+  let addressData: any = {};
+  if (addressRes.ok) {
+    addressData = await addressRes.json();
+  }
+
+  const nameParts = (userData.name || "").split(" ");
+  const firstName = nameParts[0] || "";
+  const lastName = nameParts.slice(1).join(" ") || "";
+
+  return {
+    firstName,
+    lastName,
+    username: userData.email?.split("@")[0] || "",
+    email: userData.email || "",
+    phone: userData.phone || "",
+    country: addressData.country || "",
+    cityState: addressData.city || "",
+    postalCode: addressData.postalCode || "",
+    taxId: "",
+    avatarUrl: userData.image || "https://api.dicebear.com/7.x/bottts/svg?seed=Popdrop",
+    isEmailVerified: true,
+    isPhoneVerified: false,
+    kycStatus: "Unverified",
+    totalSalesCount: 45,
+  };
 }
 
 /**
  * Update User Profile
  */
-export async function updateUserProfile(payload: Partial<UserProfile>): Promise<{ success: boolean; profile: UserProfile }> {
+export async function updateUserProfile(payload: Partial<UserProfile>): Promise<{ success: boolean; profile?: UserProfile }> {
   if (USE_MOCK) {
     await new Promise((resolve) => setTimeout(resolve, 600));
     return { success: true, profile: payload as UserProfile };
   }
 
-  const res = await fetch("/api/v1/user/profile", {
-    method: "PUT",
-    headers: getAuthHeaders(),
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) throw new Error("Failed to update profile");
-  return res.json();
+  // Map to /profile
+  if (payload.firstName !== undefined || payload.lastName !== undefined || payload.avatarUrl !== undefined || payload.phone !== undefined) {
+    const profileUpdate: any = {};
+    if (payload.firstName !== undefined || payload.lastName !== undefined) {
+      profileUpdate.name = `${payload.firstName || ""} ${payload.lastName || ""}`.trim();
+    }
+    if (payload.avatarUrl !== undefined) {
+      profileUpdate.image = payload.avatarUrl;
+    }
+    if (payload.phone !== undefined) {
+      profileUpdate.phone = payload.phone;
+    }
+    
+    await fetch("/api/v1/user/profile", {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(profileUpdate),
+    });
+  }
+
+  // Map to /address
+  if (payload.country !== undefined || payload.cityState !== undefined || payload.postalCode !== undefined) {
+    const addressUpdate: any = {};
+    if (payload.country !== undefined) addressUpdate.country = payload.country;
+    if (payload.cityState !== undefined) addressUpdate.city = payload.cityState;
+    if (payload.postalCode !== undefined) addressUpdate.postalCode = payload.postalCode;
+    
+    // We send addressLine as empty string since UI doesn't have it explicitly separate
+    if (!addressUpdate.addressLine) addressUpdate.addressLine = "";
+
+    await fetch("/api/v1/user/address", {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(addressUpdate),
+    });
+  }
+
+  return { success: true };
 }
 
 /**
  * Upload Avatar to Cloud Storage (Presigned URL)
  */
 export async function uploadAvatarImage(file: File, onProgress?: (percent: number) => void): Promise<string> {
-  const { uploadUrl, publicUrl } = await getPresignedUrl(file.name, file.type);
+  const res = await fetch(`/api/v1/user/upload-url?file=${encodeURIComponent(file.name)}&type=${encodeURIComponent(file.type)}`, {
+    headers: getAuthHeaders(),
+  });
+  
+  if (!res.ok) throw new Error("Failed to get upload URL");
+  const { uploadUrl, publicUrl } = await res.json();
+  
   await uploadFileToCloud(uploadUrl, file, onProgress);
   
   // Save updated avatar URL to profile
   if (!USE_MOCK) {
     await updateUserProfile({ avatarUrl: publicUrl });
+    // Update NextAuth session cookie so navbar picks up new image immediately
+    fetch("/api/auth/session?update=true", { method: "POST" });
   }
   return publicUrl;
+}
+
+/**
+ * Change Password
+ */
+export async function changePassword(currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+  const res = await fetch("/api/v1/user/change-password", {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.message || "Failed to change password");
+  }
+  return res.json();
 }
 
 /**

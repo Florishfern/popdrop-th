@@ -17,6 +17,7 @@ export async function GET() {
         name: true,
         email: true,
         image: true,
+        phone: true,
       },
     });
 
@@ -39,11 +40,12 @@ export async function PUT(req: Request) {
     }
 
     const body = await req.json();
-    const { name, image } = body;
+    const { name, image, phone } = body;
 
     const updateData: any = {};
     if (name !== undefined) updateData.name = name;
     if (image !== undefined) updateData.image = image;
+    if (phone !== undefined) updateData.phone = phone;
 
     const updatedUser = await prisma.user.update({
       where: { id: session.user.id },
@@ -53,6 +55,7 @@ export async function PUT(req: Request) {
         name: true,
         email: true,
         image: true,
+        phone: true,
       },
     });
 

@@ -33,7 +33,7 @@ export interface CreateProductPayload {
   imageUrl: string;
 }
 
-const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK !== "false";
+const USE_MOCK = false;
 
 // Helper for Auth headers
 const getAuthHeaders = (): Record<string, string> => {

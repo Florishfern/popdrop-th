@@ -11,6 +11,8 @@ import {
   uploadAvatarImage, 
   submitKYCDocument,
   verifyPhoneOTPCode,
+  updateUserProfile,
+  changePassword,
   UserProfile 
 } from "@/services/profileApi";
 import { 
@@ -39,6 +41,18 @@ export default function ProfileClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+
+  const [isEditingPersonal, setIsEditingPersonal] = useState(false);
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
+  const [isSavingPersonal, setIsSavingPersonal] = useState(false);
+  const [isSavingAddress, setIsSavingAddress] = useState(false);
+  const [editForm, setEditForm] = useState<Partial<UserProfile>>({});
+
+  // Reset Password State
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   // Phone OTP Modal State
   const [showPhoneModal, setShowPhoneModal] = useState(false);
@@ -114,6 +128,84 @@ export default function ProfileClient() {
       showToast("รหัส OTP ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง");
     } finally {
       setIsVerifyingOtp(false);
+    }
+  };
+
+  const handleTogglePersonalEdit = async () => {
+    if (isEditingPersonal) {
+      try {
+        setIsSavingPersonal(true);
+        const payload = {
+          firstName: editForm.firstName,
+          lastName: editForm.lastName,
+          phone: editForm.phone,
+        };
+        await updateUserProfile(payload);
+        setProfile((prev) => prev ? { ...prev, ...payload } : prev);
+        showToast("Personal information updated!");
+        fetch("/api/auth/session?update=true", { method: "POST" });
+        setIsEditingPersonal(false);
+      } catch (e) {
+        showToast("Failed to update profile");
+      } finally {
+        setIsSavingPersonal(false);
+      }
+    } else {
+      setEditForm((prev) => ({
+        ...prev,
+        firstName: profile?.firstName,
+        lastName: profile?.lastName,
+        phone: profile?.phone,
+      }));
+      setIsEditingPersonal(true);
+    }
+  };
+
+  const handleToggleAddressEdit = async () => {
+    if (isEditingAddress) {
+      try {
+        setIsSavingAddress(true);
+        const payload = {
+          country: editForm.country,
+          cityState: editForm.cityState,
+          postalCode: editForm.postalCode,
+        };
+        await updateUserProfile(payload);
+        setProfile((prev) => prev ? { ...prev, ...payload } : prev);
+        showToast("Address updated!");
+        setIsEditingAddress(false);
+      } catch (e) {
+        showToast("Failed to update address");
+      } finally {
+        setIsSavingAddress(false);
+      }
+    } else {
+      setEditForm((prev) => ({
+        ...prev,
+        country: profile?.country,
+        cityState: profile?.cityState,
+        postalCode: profile?.postalCode,
+      }));
+      setIsEditingAddress(true);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword) {
+      showToast("Please fill in both fields");
+      return;
+    }
+    try {
+      setIsChangingPassword(true);
+      await changePassword(currentPassword, newPassword);
+      showToast("Password updated successfully!");
+      setShowPasswordModal(false);
+      setCurrentPassword("");
+      setNewPassword("");
+    } catch (e: any) {
+      showToast(e.message || "Failed to update password");
+    } finally {
+      setIsChangingPassword(false);
     }
   };
 
@@ -267,31 +359,68 @@ export default function ProfileClient() {
                   <div className="bg-white border border-neutral-100 rounded-[2rem] p-6 sm:p-8 shadow-sm">
                     <div className="flex items-center justify-between mb-8">
                       <h3 className="text-lg sm:text-xl font-bold text-black">Personal information</h3>
-                      <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-neutral-600 bg-neutral-100 hover:bg-neutral-200 transition-colors">
-                        Edit <Pencil size={14} />
+                      <button 
+                        onClick={handleTogglePersonalEdit}
+                        disabled={isSavingPersonal}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-neutral-600 bg-neutral-100 hover:bg-neutral-200 transition-colors"
+                      >
+                        {isSavingPersonal ? (
+                          <><Loader2 size={14} className="animate-spin" /> Saving...</>
+                        ) : isEditingPersonal ? (
+                          <>Save <CheckCircle2 size={14} /></>
+                        ) : (
+                          <>Edit <Pencil size={14} /></>
+                        )}
                       </button>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-8 gap-x-12">
                       <div>
                         <label className="block text-xs font-bold text-neutral-400 mb-1">First Name</label>
-                        <div className="text-sm sm:text-base font-bold text-black">{profile?.firstName}</div>
+                        {isEditingPersonal ? (
+                          <input 
+                            className="w-full bg-white border border-neutral-300 px-3 py-2 rounded-lg text-sm sm:text-base font-bold text-black outline-none focus:ring-2 focus:ring-black/10 focus:border-black shadow-sm transition-all" 
+                            value={editForm.firstName || ""} 
+                            onChange={(e) => setEditForm({...editForm, firstName: e.target.value})}
+                            placeholder="e.g. John"
+                          />
+                        ) : (
+                          <div className="w-full bg-neutral-50/50 border border-neutral-100 px-3 py-2 rounded-lg text-sm sm:text-base font-bold text-black min-h-[42px] flex items-center">{profile?.firstName || "-"}</div>
+                        )}
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-neutral-400 mb-1">Last Name</label>
-                        <div className="text-sm sm:text-base font-bold text-black">{profile?.lastName}</div>
+                        {isEditingPersonal ? (
+                          <input 
+                            className="w-full bg-white border border-neutral-300 px-3 py-2 rounded-lg text-sm sm:text-base font-bold text-black outline-none focus:ring-2 focus:ring-black/10 focus:border-black shadow-sm transition-all" 
+                            value={editForm.lastName || ""} 
+                            onChange={(e) => setEditForm({...editForm, lastName: e.target.value})}
+                            placeholder="e.g. Doe"
+                          />
+                        ) : (
+                          <div className="w-full bg-neutral-50/50 border border-neutral-100 px-3 py-2 rounded-lg text-sm sm:text-base font-bold text-black min-h-[42px] flex items-center">{profile?.lastName || "-"}</div>
+                        )}
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-neutral-400 mb-1">Username</label>
-                        <div className="text-sm sm:text-base font-bold text-black">{profile?.username}</div>
+                        <div className="w-full bg-neutral-50 border border-neutral-100 px-3 py-2 rounded-lg text-sm sm:text-base font-bold text-neutral-500 min-h-[42px] flex items-center cursor-not-allowed">{profile?.username || "-"}</div>
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-neutral-400 mb-1">Email address</label>
-                        <div className="text-sm sm:text-base font-bold text-black">{profile?.email}</div>
+                        <div className="w-full bg-neutral-50 border border-neutral-100 px-3 py-2 rounded-lg text-sm sm:text-base font-bold text-neutral-500 min-h-[42px] flex items-center cursor-not-allowed">{profile?.email || "-"}</div>
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-neutral-400 mb-1">Phone</label>
-                        <div className="text-sm sm:text-base font-bold text-black">{profile?.phone}</div>
+                        {isEditingPersonal ? (
+                          <input 
+                            className="w-full bg-white border border-neutral-300 px-3 py-2 rounded-lg text-sm sm:text-base font-bold text-black outline-none focus:ring-2 focus:ring-black/10 focus:border-black shadow-sm transition-all" 
+                            value={editForm.phone || ""} 
+                            onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
+                            placeholder="e.g. 0812345678"
+                          />
+                        ) : (
+                          <div className="w-full bg-neutral-50/50 border border-neutral-100 px-3 py-2 rounded-lg text-sm sm:text-base font-bold text-black min-h-[42px] flex items-center">{profile?.phone || "-"}</div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -300,34 +429,70 @@ export default function ProfileClient() {
                   <div className="bg-white border border-neutral-100 rounded-[2rem] p-6 sm:p-8 shadow-sm">
                     <div className="flex items-center justify-between mb-8">
                       <h3 className="text-lg sm:text-xl font-bold text-black">Address</h3>
-                      <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-neutral-600 bg-neutral-100 hover:bg-neutral-200 transition-colors">
-                        Edit <Pencil size={14} />
+                      <button 
+                        onClick={handleToggleAddressEdit}
+                        disabled={isSavingAddress}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-neutral-600 bg-neutral-100 hover:bg-neutral-200 transition-colors"
+                      >
+                        {isSavingAddress ? (
+                          <><Loader2 size={14} className="animate-spin" /> Saving...</>
+                        ) : isEditingAddress ? (
+                          <>Save <CheckCircle2 size={14} /></>
+                        ) : (
+                          <>Edit <Pencil size={14} /></>
+                        )}
                       </button>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-8 gap-x-12">
                       <div>
                         <label className="block text-xs font-bold text-neutral-400 mb-1">Country</label>
-                        <div className="text-sm sm:text-base font-bold text-black">{profile?.country}</div>
+                        {isEditingAddress ? (
+                          <input 
+                            className="w-full bg-white border border-neutral-300 px-3 py-2 rounded-lg text-sm sm:text-base font-bold text-black outline-none focus:ring-2 focus:ring-black/10 focus:border-black shadow-sm transition-all" 
+                            value={editForm.country || ""} 
+                            onChange={(e) => setEditForm({...editForm, country: e.target.value})}
+                            placeholder="e.g. Thailand"
+                          />
+                        ) : (
+                          <div className="w-full bg-neutral-50/50 border border-neutral-100 px-3 py-2 rounded-lg text-sm sm:text-base font-bold text-black min-h-[42px] flex items-center">{profile?.country || "-"}</div>
+                        )}
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-neutral-400 mb-1">City / State</label>
-                        <div className="text-sm sm:text-base font-bold text-black">{profile?.cityState}</div>
+                        {isEditingAddress ? (
+                          <input 
+                            className="w-full bg-white border border-neutral-300 px-3 py-2 rounded-lg text-sm sm:text-base font-bold text-black outline-none focus:ring-2 focus:ring-black/10 focus:border-black shadow-sm transition-all" 
+                            value={editForm.cityState || ""} 
+                            onChange={(e) => setEditForm({...editForm, cityState: e.target.value})}
+                            placeholder="e.g. Bangkok"
+                          />
+                        ) : (
+                          <div className="w-full bg-neutral-50/50 border border-neutral-100 px-3 py-2 rounded-lg text-sm sm:text-base font-bold text-black min-h-[42px] flex items-center">{profile?.cityState || "-"}</div>
+                        )}
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-neutral-400 mb-1">Postal Code</label>
-                        <div className="text-sm sm:text-base font-bold text-black">{profile?.postalCode}</div>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-neutral-400 mb-1">TAX ID</label>
-                        <div className="text-sm sm:text-base font-bold text-black">{profile?.taxId}</div>
+                        {isEditingAddress ? (
+                          <input 
+                            className="w-full bg-white border border-neutral-300 px-3 py-2 rounded-lg text-sm sm:text-base font-bold text-black outline-none focus:ring-2 focus:ring-black/10 focus:border-black shadow-sm transition-all" 
+                            value={editForm.postalCode || ""} 
+                            onChange={(e) => setEditForm({...editForm, postalCode: e.target.value})}
+                            placeholder="e.g. 10110"
+                          />
+                        ) : (
+                          <div className="w-full bg-neutral-50/50 border border-neutral-100 px-3 py-2 rounded-lg text-sm sm:text-base font-bold text-black min-h-[42px] flex items-center">{profile?.postalCode || "-"}</div>
+                        )}
                       </div>
                     </div>
                   </div>
 
                   {/* Bottom Actions */}
                   <div className="pt-2">
-                    <button className="bg-white border-2 border-neutral-200 hover:border-black text-black px-6 py-3 rounded-2xl text-sm font-bold transition-all w-full sm:w-auto text-center">
+                    <button 
+                      onClick={() => setShowPasswordModal(true)}
+                      className="bg-white border-2 border-neutral-200 hover:border-black text-black px-6 py-3 rounded-2xl text-sm font-bold transition-all w-full sm:w-auto text-center"
+                    >
                       Reset Password
                     </button>
                   </div>
@@ -554,6 +719,69 @@ export default function ProfileClient() {
                 </>
               ) : (
                 "ยืนยันรหัส OTP"
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Password Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-[2rem] w-full max-w-md p-8 shadow-2xl flex flex-col gap-6 animate-in zoom-in-95 relative">
+            <button 
+              onClick={() => setShowPasswordModal(false)}
+              className="absolute top-6 right-6 text-neutral-400 hover:text-black p-1 rounded-lg"
+            >
+              <X size={20} />
+            </button>
+
+            <div>
+              <h2 className="text-2xl font-black text-black mb-2">Change Password</h2>
+              <p className="text-sm text-neutral-500 font-medium">
+                Enter your current password and your new password.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-black uppercase tracking-wider">
+                  Current Password
+                </label>
+                <input 
+                  type="password" 
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full bg-neutral-50 border border-neutral-200 px-4 py-3.5 rounded-xl text-lg text-black outline-none focus:ring-2 focus:ring-black/10 focus:border-black"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold text-black uppercase tracking-wider">
+                  New Password
+                </label>
+                <input 
+                  type="password" 
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full bg-neutral-50 border border-neutral-200 px-4 py-3.5 rounded-xl text-lg text-black outline-none focus:ring-2 focus:ring-black/10 focus:border-black"
+                />
+              </div>
+            </div>
+
+            <button 
+              onClick={handleChangePassword}
+              disabled={isChangingPassword}
+              className="w-full bg-black hover:bg-neutral-800 text-white font-bold rounded-xl py-4 transition-colors flex items-center justify-center gap-2"
+            >
+              {isChangingPassword ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  Updating...
+                </>
+              ) : (
+                "Update Password"
               )}
             </button>
           </div>
