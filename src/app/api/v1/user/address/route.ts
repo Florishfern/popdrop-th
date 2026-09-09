@@ -32,8 +32,8 @@ export async function PUT(req: Request) {
     const body = await req.json();
     const { addressLine, city, country } = body;
 
-    if (!addressLine || !city || !country) {
-      return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
+    if (addressLine === undefined || city === undefined || country === undefined) {
+      return NextResponse.json({ message: "Invalid payload" }, { status: 400 });
     }
 
     // Check if user already has an address

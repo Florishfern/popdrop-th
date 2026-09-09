@@ -139,6 +139,9 @@ export default function EditProfilePage() {
     setMessage({ text: "", type: "" });
 
     try {
+      if (!currentPassword || !newPassword) {
+        throw new Error("Please fill in both password fields.");
+      }
       const res = await fetch("/api/v1/user/change-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -311,7 +314,6 @@ export default function EditProfilePage() {
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 transition-colors"
-                  required
                 />
               </div>
               <div className="space-y-2">
@@ -321,7 +323,6 @@ export default function EditProfilePage() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 transition-colors"
-                  required
                 />
               </div>
             </div>
