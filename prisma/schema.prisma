@@ -89,9 +89,14 @@ model Address {
   id           String  @id @default(cuid())
   userId       String
   user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  addressLine  String
-  city         String
-  country      String
+  
+  name         String
+  phone        String
+  street       String
+  subdistrict  String
+  district     String
+  province     String
+  postalCode   String
   isDefault    Boolean @default(false)
   
   createdAt    DateTime @default(now())
@@ -102,7 +107,10 @@ model CreditCard {
   id             String  @id @default(cuid())
   userId         String
   user           User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  cardholderName String
   lastFourDigits String
+  expiry         String
   brand          String
   token          String  // e.g., Stripe/Omise token
   isDefault      Boolean @default(false)

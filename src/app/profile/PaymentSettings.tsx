@@ -9,34 +9,15 @@ import {
   updateUserAddress,
   addCreditCardToken, 
   setDefaultCreditCard,
+  getUserCards,
+  deleteCreditCardToken,
   CreditCardItem, 
   UserAddress 
 } from "@/services/profileApi";
 
 export default function PaymentSettings() {
-  const [cards, setCards] = useState<CreditCardItem[]>([
-    {
-      id: "card-1",
-      cardNumberMasked: "•••• •••• •••• 4242",
-      last4: "4242",
-      expiry: "12/26",
-      cardholderName: "MICHAEL RODRIGUEZ",
-      brand: "Visa",
-      isDefault: true,
-      token: "tok_visa_4242",
-    },
-    {
-      id: "card-2",
-      cardNumberMasked: "•••• •••• •••• 8899",
-      last4: "8899",
-      expiry: "08/28",
-      cardholderName: "MICHAEL RODRIGUEZ",
-      brand: "Mastercard",
-      isDefault: false,
-      token: "tok_mc_8899",
-    },
-  ]);
-
+  const [cards, setCards] = useState<CreditCardItem[]>([]);
+  const [isLoadingCards, setIsLoadingCards] = useState(true);
   const [addresses, setAddresses] = useState<UserAddress[]>([]);
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(true);
   
@@ -66,24 +47,41 @@ export default function PaymentSettings() {
   });
 
   useEffect(() => {
-    const fetchAddr = async () => {
+    const fetchData = async () => {
       try {
         setIsLoadingAddresses(true);
-        const data = await getUserAddresses();
-        setAddresses(data);
+        setIsLoadingCards(true);
+        const [addrData, cardData] = await Promise.all([
+          getUserAddresses(),
+          getUserCards()
+        ]);
+        setAddresses(addrData);
+        setCards(cardData);
       } catch (err) {
-        console.error("Failed to load addresses", err);
+        console.error("Failed to load payment settings data", err);
       } finally {
         setIsLoadingAddresses(false);
+        setIsLoadingCards(false);
       }
     };
-    fetchAddr();
+    fetchData();
   }, []);
 
   const handleSetDefaultCard = async (id: string) => {
     try {
       setCards(cards.map(c => ({ ...c, isDefault: c.id === id })));
       await setDefaultCreditCard(id);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteCard = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm("Are you sure you want to delete this credit card?")) return;
+    try {
+      setCards(cards.filter(c => c.id !== id));
+      await deleteCreditCardToken(id);
     } catch (err) {
       console.error(err);
     }
@@ -165,7 +163,9 @@ export default function PaymentSettings() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {cards.map((card) => (
+            {isLoadingCards ? (
+              <div className="h-48 flex items-center justify-center text-neutral-400">Loading cards...</div>
+            ) : cards.map((card) => (
               <div 
                 key={card.id} 
                 onClick={() => handleSetDefaultCard(card.id)}
@@ -180,13 +180,22 @@ export default function PaymentSettings() {
                   <div className="text-lg font-black italic tracking-wider">
                     {card.brand}
                   </div>
-                  {card.isDefault ? (
-                    <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black text-xs font-bold text-white shadow-sm">
-                      <CheckCircle2 size={14} /> Default
-                    </div>
-                  ) : (
-                    <span className="text-xs font-bold text-neutral-400 hover:text-black">Set Default</span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {card.isDefault ? (
+                      <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-black text-xs font-bold text-white shadow-sm">
+                        <CheckCircle2 size={14} /> Default
+                      </div>
+                    ) : (
+                      <span className="text-xs font-bold text-neutral-400 hover:text-black">Set Default</span>
+                    )}
+                    <button 
+                      onClick={(e) => handleDeleteCard(card.id, e)}
+                      className="p-1.5 rounded-full text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                      title="Delete card"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Middle: Card Number */}

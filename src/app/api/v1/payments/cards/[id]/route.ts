@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
-export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (!session || !session.user) {
@@ -18,21 +18,13 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       return NextResponse.json({ message: "Not found" }, { status: 404 });
     }
 
-    // Unset all other cards
-    await prisma.creditCard.updateMany({
-      where: { userId: session.user.id },
-      data: { isDefault: false }
+    await prisma.creditCard.delete({
+      where: { id }
     });
 
-    // Set this card to default
-    const updated = await prisma.creditCard.update({
-      where: { id },
-      data: { isDefault: true }
-    });
-
-    return NextResponse.json({ success: true, updated });
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Error setting default card:", error);
+    console.error("Error deleting credit card:", error);
     return NextResponse.json({ message: "Internal server error" }, { status: 500 });
   }
 }

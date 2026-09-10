@@ -273,34 +273,6 @@ export async function verifyOtp(type: "EMAIL" | "PHONE", code: string): Promise<
  * Fetch Saved Addresses
  */
 export async function getUserAddresses(): Promise<UserAddress[]> {
-  if (USE_MOCK) {
-    await new Promise((r) => setTimeout(r, 400));
-    return [
-      {
-        id: "addr_1",
-        name: "Michael Rodriguez",
-        phone: "081-234-5678",
-        street: "99/1 ซอย สุขุมวิท 21 (อโศก)",
-        subdistrict: "คลองเตยเหนือ",
-        district: "วัฒนา",
-        province: "กรุงเทพมหานคร",
-        postalCode: "10110",
-        isDefault: true,
-      },
-      {
-        id: "addr_2",
-        name: "Michael Rodriguez (Office)",
-        phone: "02-999-8888",
-        street: "55 อาคารออฟฟิศ ทาวเวอร์ ชั้น 18 ถนนพระราม 9",
-        subdistrict: "ห้วยขวาง",
-        district: "ห้วยขวาง",
-        province: "กรุงเทพมหานคร",
-        postalCode: "10310",
-        isDefault: false,
-      },
-    ];
-  }
-
   const res = await fetch("/api/v1/user/addresses", { headers: getAuthHeaders() });
   if (!res.ok) throw new Error("Failed to fetch addresses");
   return res.json();
@@ -310,11 +282,6 @@ export async function getUserAddresses(): Promise<UserAddress[]> {
  * Add New Address
  */
 export async function addUserAddress(payload: Omit<UserAddress, "id">): Promise<UserAddress> {
-  if (USE_MOCK) {
-    await new Promise((r) => setTimeout(r, 500));
-    return { ...payload, id: `addr_${Date.now()}` };
-  }
-
   const res = await fetch("/api/v1/user/addresses", {
     method: "POST",
     headers: getAuthHeaders(),
@@ -328,11 +295,6 @@ export async function addUserAddress(payload: Omit<UserAddress, "id">): Promise<
  * Update / Set Default Address
  */
 export async function updateUserAddress(id: string, payload: Partial<UserAddress>): Promise<{ success: boolean }> {
-  if (USE_MOCK) {
-    await new Promise((r) => setTimeout(r, 400));
-    return { success: true };
-  }
-
   const res = await fetch(`/api/v1/user/addresses/${id}`, {
     method: "PUT",
     headers: getAuthHeaders(),
@@ -346,16 +308,17 @@ export async function updateUserAddress(id: string, payload: Partial<UserAddress
  * Delete Address
  */
 export async function deleteUserAddress(id: string): Promise<{ success: boolean }> {
-  if (USE_MOCK) {
-    await new Promise((r) => setTimeout(r, 400));
-    return { success: true };
-  }
-
   const res = await fetch(`/api/v1/user/addresses/${id}`, {
     method: "DELETE",
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error("Failed to delete address");
+  return res.json();
+}
+
+export async function getUserCards(): Promise<CreditCardItem[]> {
+  const res = await fetch("/api/v1/payments/cards", { headers: getAuthHeaders() });
+  if (!res.ok) throw new Error("Failed to fetch credit cards");
   return res.json();
 }
 
@@ -368,23 +331,6 @@ export async function addCreditCardToken(cardData: {
   expiry: string;
   cvv: string;
 }): Promise<CreditCardItem> {
-  if (USE_MOCK) {
-    await new Promise((r) => setTimeout(r, 800));
-    const cleanNum = cardData.cardNumber.replace(/\s+/g, "");
-    const last4 = cleanNum.slice(-4) || "4242";
-    const brand = cleanNum.startsWith("5") ? "Mastercard" : "Visa";
-    return {
-      id: `card_${Date.now()}`,
-      cardNumberMasked: `•••• •••• •••• ${last4}`,
-      last4,
-      expiry: cardData.expiry,
-      cardholderName: cardData.cardholderName.toUpperCase(),
-      brand,
-      isDefault: false,
-      token: `tok_${Math.random().toString(36).substring(2, 10)}`,
-    };
-  }
-
   const res = await fetch("/api/v1/payments/cards", {
     method: "POST",
     headers: getAuthHeaders(),
@@ -398,16 +344,23 @@ export async function addCreditCardToken(cardData: {
  * Set Default Credit Card
  */
 export async function setDefaultCreditCard(id: string): Promise<{ success: boolean }> {
-  if (USE_MOCK) {
-    await new Promise((r) => setTimeout(r, 300));
-    return { success: true };
-  }
-
   const res = await fetch(`/api/v1/payments/cards/${id}/default`, {
     method: "PUT",
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error("Failed to set default credit card");
+  return res.json();
+}
+
+/**
+ * Delete Credit Card
+ */
+export async function deleteCreditCardToken(id: string): Promise<{ success: boolean }> {
+  const res = await fetch(`/api/v1/payments/cards/${id}`, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error("Failed to delete credit card");
   return res.json();
 }
 
