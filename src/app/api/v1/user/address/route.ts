@@ -30,15 +30,12 @@ export async function PUT(req: Request) {
     }
 
     const body = await req.json();
-    const { addressLine, city, country } = body;
-
-    if (addressLine === undefined || city === undefined || country === undefined) {
-      return NextResponse.json({ message: "Invalid payload" }, { status: 400 });
-    }
+    const { addressLine, city, country, postalCode } = body;
 
     // Check if user already has an address
     const existingAddress = await prisma.address.findFirst({
-      where: { userId: session.user.id }
+      where: { userId: session.user.id },
+      orderBy: { isDefault: 'desc' }
     });
 
     let updatedAddress;
@@ -46,15 +43,23 @@ export async function PUT(req: Request) {
     if (existingAddress) {
       updatedAddress = await prisma.address.update({
         where: { id: existingAddress.id },
-        data: { addressLine, city, country }
+        data: { 
+          street: addressLine !== undefined ? addressLine : existingAddress.street,
+          province: city !== undefined ? city : existingAddress.province,
+          postalCode: postalCode !== undefined ? postalCode : existingAddress.postalCode,
+        }
       });
     } else {
       updatedAddress = await prisma.address.create({
         data: {
           userId: session.user.id,
-          addressLine,
-          city,
-          country,
+          street: addressLine || "",
+          province: city || "",
+          postalCode: postalCode || "",
+          name: "",
+          phone: "",
+          subdistrict: "",
+          district: "",
           isDefault: true
         }
       });
