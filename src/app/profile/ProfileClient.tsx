@@ -10,7 +10,8 @@ import {
   getUserProfile, 
   uploadAvatarImage, 
   submitKYCDocument,
-  verifyPhoneOTPCode,
+  sendOtp,
+  verifyOtp,
   updateUserProfile,
   changePassword,
   UserProfile 
@@ -54,8 +55,9 @@ export default function ProfileClient() {
   const [newPassword, setNewPassword] = useState("");
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
-  // Phone OTP Modal State
-  const [showPhoneModal, setShowPhoneModal] = useState(false);
+  // OTP Modal State
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otpType, setOtpType] = useState<"EMAIL" | "PHONE">("PHONE");
   const [otpCode, setOtpCode] = useState("");
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
 
@@ -110,20 +112,39 @@ export default function ProfileClient() {
     }
   };
 
-  const handleVerifyPhone = async () => {
+  const handleSendOtp = async (type: "EMAIL" | "PHONE", destination: string) => {
+    try {
+      setOtpType(type);
+      const res = await sendOtp(type, destination);
+      if (res.devCode) {
+        showToast(`[DEV] OTP Code is: ${res.devCode}`);
+      } else {
+        showToast(`รหัส OTP ถูกส่งไปยัง ${type === "EMAIL" ? "อีเมล" : "เบอร์โทรศัพท์"} ของคุณแล้ว`);
+      }
+      setShowOtpModal(true);
+    } catch (error: any) {
+      showToast(error.message || "Failed to send OTP");
+    }
+  };
+
+  const handleVerifyOtp = async () => {
     if (!otpCode || otpCode.length !== 6) {
       showToast("กรุณากรอกรหัส OTP 6 หลัก");
       return;
     }
     try {
       setIsVerifyingOtp(true);
-      await verifyPhoneOTPCode(otpCode);
+      await verifyOtp(otpType, otpCode);
       if (profile) {
-        setProfile({ ...profile, isPhoneVerified: true });
+        if (otpType === "EMAIL") {
+          setProfile({ ...profile, isEmailVerified: true });
+        } else {
+          setProfile({ ...profile, isPhoneVerified: true });
+        }
       }
-      setShowPhoneModal(false);
+      setShowOtpModal(false);
       setOtpCode("");
-      showToast("ยืนยันเบอร์โทรศัพท์เรียบร้อยแล้ว!");
+      showToast(`ยืนยัน${otpType === "EMAIL" ? "อีเมล" : "เบอร์โทรศัพท์"}เรียบร้อยแล้ว!`);
     } catch {
       showToast("รหัส OTP ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง");
     } finally {
@@ -219,8 +240,8 @@ export default function ProfileClient() {
           setProfile({ ...profile, kycStatus: "Pending" });
         }
         showToast("ยื่นเอกสารยืนยันตัวตนเรียบร้อยแล้ว อยู่ระหว่างตรวจสอบ");
-      } catch {
-        showToast("เกิดข้อผิดพลาดในการยื่นเอกสาร");
+      } catch (error: any) {
+        showToast(`เกิดข้อผิดพลาดในการยื่นเอกสาร: ${error.message || ""}`);
       } finally {
         setIsSubmittingKYC(false);
       }
@@ -563,11 +584,25 @@ export default function ProfileClient() {
                       <div>
                         <h3 className="text-lg font-bold text-black mb-1">Email Address</h3>
                         <p className="text-sm font-medium text-neutral-500 mb-2">{profile?.email}</p>
-                        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-green-50 text-green-700 text-xs font-bold">
-                          <CheckCircle2 size={14} /> Verified
-                        </div>
+                        {profile?.isEmailVerified ? (
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-green-50 text-green-700 text-xs font-bold">
+                            <CheckCircle2 size={14} /> Verified
+                          </div>
+                        ) : (
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-orange-50 text-orange-600 text-xs font-bold">
+                            <AlertCircle size={14} /> Unverified
+                          </div>
+                        )}
                       </div>
                     </div>
+                    {!profile?.isEmailVerified && (
+                      <button 
+                        onClick={() => handleSendOtp("EMAIL", profile?.email || "")}
+                        className="bg-black hover:bg-neutral-800 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-colors shrink-0"
+                      >
+                        Verify Email
+                      </button>
+                    )}
                   </div>
 
                   {/* Phone Verification */}
@@ -592,7 +627,7 @@ export default function ProfileClient() {
                     </div>
                     {!profile?.isPhoneVerified && (
                       <button 
-                        onClick={() => setShowPhoneModal(true)}
+                        onClick={() => handleSendOtp("PHONE", profile?.phone || "")}
                         className="bg-black hover:bg-neutral-800 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-colors shrink-0"
                       >
                         Verify Phone
@@ -675,40 +710,40 @@ export default function ProfileClient() {
         )}
       </main>
 
-      {/* Phone OTP Modal */}
-      {showPhoneModal && (
+      {/* OTP Modal */}
+      {showOtpModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white rounded-[2rem] w-full max-w-md p-8 shadow-2xl flex flex-col gap-6 animate-in zoom-in-95 relative">
             <button 
-              onClick={() => setShowPhoneModal(false)}
+              onClick={() => setShowOtpModal(false)}
               className="absolute top-6 right-6 text-neutral-400 hover:text-black p-1 rounded-lg"
             >
               <X size={20} />
             </button>
 
             <div>
-              <h2 className="text-2xl font-black text-black mb-2">Verify Phone Number</h2>
+              <h2 className="text-2xl font-black text-black mb-2">Verify {otpType === "EMAIL" ? "Email Address" : "Phone Number"}</h2>
               <p className="text-sm text-neutral-500 font-medium">
-                เราได้ส่งรหัส OTP 6 หลักไปยังเบอร์ {profile?.phone}
+                เราได้ส่งรหัส OTP 6 หลักไปยัง {otpType === "EMAIL" ? profile?.email : profile?.phone}
               </p>
             </div>
 
             <div className="flex flex-col gap-2">
               <label className="text-xs font-bold text-black uppercase tracking-wider">
-                OTP Code (123456)
+                OTP Code
               </label>
               <input 
                 type="text" 
                 maxLength={6}
                 value={otpCode}
                 onChange={(e) => setOtpCode(e.target.value)}
-                placeholder="123456"
+                placeholder="กรอกรหัส OTP"
                 className="w-full bg-neutral-50 border border-neutral-200 px-4 py-3.5 rounded-xl text-center font-mono font-bold text-lg text-black outline-none tracking-widest focus:ring-2 focus:ring-black/10 focus:border-black"
               />
             </div>
 
             <button 
-              onClick={handleVerifyPhone}
+              onClick={handleVerifyOtp}
               disabled={isVerifyingOtp}
               className="w-full bg-black hover:bg-neutral-800 text-white font-bold rounded-xl py-4 transition-colors flex items-center justify-center gap-2"
             >

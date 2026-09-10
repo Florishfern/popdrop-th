@@ -43,6 +43,19 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+model OtpCode {
+  id         String   @id @default(cuid())
+  userId     String
+  code       String
+  type       String   // EMAIL or PHONE
+  expiresAt  DateTime
+  isUsed     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+
 // Popdrop Business Models
 
 model User {
@@ -52,6 +65,7 @@ model User {
 
   email         String?   @unique
   emailVerified DateTime?
+  phoneVerified DateTime?
   image         String?   // profile picture
   password_hash String?   // For credential login
 
@@ -65,6 +79,7 @@ model User {
   transactionsBuy Transaction[] @relation("Buyer")
   transactionsSell Transaction[] @relation("Seller")
   notifications Notification[]
+  otpCodes      OtpCode[]
   
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -101,6 +116,8 @@ model SellerInfo {
   userId             String  @unique
   user               User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   isVerifiedDocument Boolean @default(false)
+  idCardImageUrl     String?
+  idCardStatus       String  @default("PENDING") // PENDING, APPROVED, REJECTED
   hasTopSellerBadge  Boolean @default(false)
   totalSalesCount    Int     @default(0)
   bankName           String?

@@ -18,6 +18,17 @@ export async function GET() {
         email: true,
         image: true,
         phone: true,
+        emailVerified: true,
+        phoneVerified: true,
+        sellerInfo: {
+          select: {
+            isVerifiedDocument: true,
+            idCardImageUrl: true,
+            idCardStatus: true,
+            hasTopSellerBadge: true,
+            totalSalesCount: true,
+          }
+        }
       },
     });
 
@@ -40,12 +51,27 @@ export async function PUT(req: Request) {
     }
 
     const body = await req.json();
-    const { name, image, phone } = body;
+    const { name, image, phone, idCardImageUrl } = body;
 
     const updateData: any = {};
     if (name !== undefined) updateData.name = name;
     if (image !== undefined) updateData.image = image;
     if (phone !== undefined) updateData.phone = phone;
+
+    // Handle SellerInfo updates
+    let sellerInfoUpdate = undefined;
+    if (idCardImageUrl !== undefined) {
+      sellerInfoUpdate = {
+        upsert: {
+          create: { idCardImageUrl, idCardStatus: "PENDING" },
+          update: { idCardImageUrl, idCardStatus: "PENDING" },
+        }
+      };
+    }
+
+    if (sellerInfoUpdate) {
+      updateData.sellerInfo = sellerInfoUpdate;
+    }
 
     const updatedUser = await prisma.user.update({
       where: { id: session.user.id },
@@ -56,6 +82,17 @@ export async function PUT(req: Request) {
         email: true,
         image: true,
         phone: true,
+        emailVerified: true,
+        phoneVerified: true,
+        sellerInfo: {
+          select: {
+            isVerifiedDocument: true,
+            idCardImageUrl: true,
+            idCardStatus: true,
+            hasTopSellerBadge: true,
+            totalSalesCount: true,
+          }
+        }
       },
     });
 

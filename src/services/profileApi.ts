@@ -87,7 +87,7 @@ export async function getUserProfile(): Promise<UserProfile> {
       isEmailVerified: true,
       isPhoneVerified: false,
       kycStatus: "Unverified",
-      totalSalesCount: 45, // < 100 for default locked view, can toggle to test
+      totalSalesCount: 0, // < 100 for default locked view, can toggle to test
     };
   }
 
@@ -119,10 +119,12 @@ export async function getUserProfile(): Promise<UserProfile> {
     postalCode: addressData.postalCode || "",
     taxId: "",
     avatarUrl: userData.image || "https://api.dicebear.com/7.x/bottts/svg?seed=Popdrop",
-    isEmailVerified: true,
-    isPhoneVerified: false,
-    kycStatus: "Unverified",
-    totalSalesCount: 45,
+    isEmailVerified: !!userData.emailVerified,
+    isPhoneVerified: !!userData.phoneVerified,
+    kycStatus: userData.sellerInfo?.idCardStatus === "APPROVED" ? "Verified" 
+                : userData.sellerInfo?.idCardStatus === "PENDING" ? "Pending" 
+                : "Unverified",
+    totalSalesCount: userData.sellerInfo?.totalSalesCount || 0,
   };
 }
 
@@ -217,59 +219,54 @@ export async function changePassword(currentPassword: string, newPassword: strin
  * Submit KYC ID Card Document
  */
 export async function submitKYCDocument(file: File): Promise<{ success: boolean; message: string }> {
-  const { uploadUrl, publicUrl } = await getPresignedUrl(file.name, file.type);
+  const res = await fetch(`/api/v1/upload/secure?file=${encodeURIComponent(file.name)}&type=${encodeURIComponent(file.type)}`, {
+    headers: getAuthHeaders(),
+  });
+  
+  if (!res.ok) throw new Error("Failed to get secure upload URL");
+  const { uploadUrl, key } = await res.json();
+  
   await uploadFileToCloud(uploadUrl, file);
 
-  if (USE_MOCK) {
-    await new Promise((r) => setTimeout(r, 600));
-    return { success: true, message: "KYC Document submitted for review" };
+  const profileRes = await fetch("/api/v1/user/profile", {
+    method: "PUT",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ idCardImageUrl: key }),
+  });
+  if (!profileRes.ok) {
+    const errorData = await profileRes.json().catch(() => ({}));
+    throw new Error(errorData.message || "Failed to update profile with ID document");
   }
 
-  const res = await fetch("/api/v1/verification/id-card", {
-    method: "POST",
-    headers: getAuthHeaders(),
-    body: JSON.stringify({ documentUrl: publicUrl }),
-  });
-  if (!res.ok) throw new Error("Failed to submit KYC document");
-  return res.json();
+  return { success: true, message: "KYC Document submitted for review" };
 }
 
 /**
- * Send Email Verification Link
+ * Send OTP Code (Email or Phone)
  */
-export async function sendEmailVerificationLink(): Promise<{ success: boolean; message: string }> {
-  if (USE_MOCK) {
-    await new Promise((r) => setTimeout(r, 500));
-    return { success: true, message: "Verification link sent to your email" };
-  }
-
-  const res = await fetch("/api/v1/auth/send-email-verify", {
+export async function sendOtp(type: "EMAIL" | "PHONE", destination: string): Promise<{ success: boolean; message: string; devCode?: string }> {
+  const res = await fetch("/api/v1/user/verify/otp", {
     method: "POST",
     headers: getAuthHeaders(),
+    body: JSON.stringify({ type, destination }),
   });
-  if (!res.ok) throw new Error("Failed to send email verification");
-  return res.json();
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || "Failed to send OTP");
+  return { success: true, ...data };
 }
 
 /**
- * Verify Phone OTP Code
+ * Verify OTP Code
  */
-export async function verifyPhoneOTPCode(otp: string): Promise<{ success: boolean; message: string }> {
-  if (USE_MOCK) {
-    await new Promise((r) => setTimeout(r, 600));
-    if (otp === "123456" || otp.length === 6) {
-      return { success: true, message: "Phone number verified successfully" };
-    }
-    throw new Error("Invalid OTP code");
-  }
-
-  const res = await fetch("/api/v1/auth/verify-phone-otp", {
-    method: "POST",
+export async function verifyOtp(type: "EMAIL" | "PHONE", code: string): Promise<{ success: boolean; message: string }> {
+  const res = await fetch("/api/v1/user/verify/otp", {
+    method: "PUT",
     headers: getAuthHeaders(),
-    body: JSON.stringify({ otp }),
+    body: JSON.stringify({ type, code }),
   });
-  if (!res.ok) throw new Error("Failed to verify OTP");
-  return res.json();
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || "Failed to verify OTP");
+  return { success: true, ...data };
 }
 
 /**
