@@ -25,7 +25,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: "Type and destination are required" }, { status: 400 });
     }
 
-    const code = generateOTP();
+    const code = "123456"; // MOCK MODE: Always use 123456
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     // Store in DB (Invalidate previous unverified OTPs for this user/type)
@@ -43,24 +43,8 @@ export async function POST(req: Request) {
       }
     });
 
-    // Send OTP based on type
-    if (type === "EMAIL") {
-      // Mock email sending as requested
-      console.log(`[DEV MODE] Mock Email OTP sent to ${destination}: ${code}`);
-    } else if (type === "PHONE") {
-      // AWS SNS Free Tier SMS (Max 100/month)
-      try {
-        const params = {
-          Message: `Your Popdrop verification code is: ${code}`,
-          PhoneNumber: destination,
-        };
-        const command = new PublishCommand(params);
-        await snsClient.send(command);
-      } catch (snsError) {
-        console.error("SNS Error (Fallback to Mock):", snsError);
-        console.log(`[DEV MODE] Mock SMS OTP sent to ${destination}: ${code}`);
-      }
-    }
+    // Mock sending
+    console.log(`[MOCK MODE] OTP sent to ${destination}: ${code}`);
 
     // In dev mode or without real creds, return the code for testing
     // (In real prod with real SMS/Email, we wouldn't return this to client)
