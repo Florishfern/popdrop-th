@@ -27,6 +27,7 @@ export async function GET() {
             idCardStatus: true,
             hasTopSellerBadge: true,
             totalSalesCount: true,
+            updatedAt: true,
           }
         }
       },
@@ -34,6 +35,19 @@ export async function GET() {
 
     if (!user) {
       return NextResponse.json({ message: "User not found" }, { status: 404 });
+    }
+
+    // Auto-approve KYC if PENDING for more than 5 minutes
+    if (user.sellerInfo?.idCardStatus === "PENDING" && user.sellerInfo.updatedAt) {
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+      if (new Date(user.sellerInfo.updatedAt) < fiveMinutesAgo) {
+        await prisma.sellerInfo.update({
+          where: { userId: user.id },
+          data: { idCardStatus: "APPROVED", isVerifiedDocument: true }
+        });
+        user.sellerInfo.idCardStatus = "APPROVED";
+        user.sellerInfo.isVerifiedDocument = true;
+      }
     }
 
     return NextResponse.json(user);
