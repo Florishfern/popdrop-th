@@ -143,6 +143,7 @@ model Product {
   sellerId                   String
   seller                     User    @relation(fields: [sellerId], references: [id], onDelete: Cascade)
   title                      String
+  category                   String  @default("Art Toy")
   description                String
   startPrice                 Float
   currentPrice               Float

@@ -79,7 +79,7 @@ export async function GET(req: Request) {
       status: p.status,
       isAuction: true, // simplified for now
       imageUrl: p.images.length > 0 ? p.images[0].imageUrl : "https://via.placeholder.com/300",
-      category: "Art Toys", // Mocked since it's missing from DB schema
+      category: p.category || "Art Toy",
       sellerName: p.seller?.name || "Unknown Seller",
       sellerAvatar: p.seller?.image || "https://via.placeholder.com/50",
       viewsCount: 0, // Not in DB yet

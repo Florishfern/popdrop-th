@@ -1,32 +1,64 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import prisma from "@/lib/prisma";
 
-export async function POST(request: NextRequest) {
-  const body = await request.json();
-  const { title, category, price, description, imageUrl } = body;
+export async function POST(req: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
 
-  if (!title || !category || !price) {
+    const body = await req.json();
+    const { title, category, price, description, imageUrl } = body;
+
+    if (!title || !category || !price) {
+      return NextResponse.json(
+        { error: "Title, category, and price are required" },
+        { status: 400 }
+      );
+    }
+
+    // Default auction ends in 7 days
+    const endTime = new Date();
+    endTime.setDate(endTime.getDate() + 7);
+
+    // Create the product in the database
+    const newProduct = await prisma.product.create({
+      data: {
+        sellerId: session.user.id,
+        title,
+        category,
+        startPrice: Number(price),
+        currentPrice: Number(price),
+        description: description || "",
+        endTime,
+        status: "LIVE",
+        images: {
+          create: [
+            {
+              imageUrl: imageUrl || "/images/hirono.png",
+              sortOrder: 0
+            }
+          ]
+        }
+      },
+      include: {
+        images: true
+      }
+    });
+
     return NextResponse.json(
-      { error: "Title, category, and price are required" },
-      { status: 400 }
+      {
+        success: true,
+        message: "Product listed successfully",
+        product: newProduct,
+      },
+      { status: 201 }
     );
+  } catch (error) {
+    console.error("Error creating product:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
-
-  const newProduct = {
-    id: `prod_${Date.now()}`,
-    title,
-    category,
-    price: Number(price),
-    description: description || "",
-    imageUrl: imageUrl || "/images/hirono.png",
-    createdAt: new Date().toISOString(),
-  };
-
-  return NextResponse.json(
-    {
-      success: true,
-      message: "Product listed successfully",
-      product: newProduct,
-    },
-    { status: 201 }
-  );
 }
