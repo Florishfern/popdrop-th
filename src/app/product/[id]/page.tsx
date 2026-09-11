@@ -152,18 +152,17 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
               </span>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-sans text-black mb-4 leading-tight">{product.title}</h1>
-            <p className="text-neutral-500 text-sm leading-relaxed mb-6">{product.description}</p>
-
-            {/* Seller Profile */}
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-sans text-black mb-6 leading-tight">{product.title}</h1>
+            
+            {/* Seller Profile (No Box) */}
             {product.seller && (
-              <div className="flex items-center gap-3 mb-8 bg-white p-4 rounded-2xl border border-neutral-100 shadow-sm">
-                <div className="relative w-12 h-12 rounded-full overflow-hidden border border-neutral-200">
+              <div className="flex items-center gap-3 mb-8">
+                <div className="relative w-10 h-10 rounded-full overflow-hidden bg-neutral-100">
                   <Image src={product.seller.avatar} alt={product.seller.name} fill className="object-cover" />
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Seller</span>
-                  <span className="text-sm font-bold text-black flex items-center gap-1.5">
+                <div className="flex flex-col justify-center">
+                  <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider leading-none mb-1.5">Listed by</span>
+                  <span className="text-sm font-bold text-black flex items-center gap-1.5 leading-none">
                     {product.seller.name}
                     {product.seller.totalSalesCount >= 100 && (
                       <CheckCircle size={14} className="text-blue-500" />
@@ -172,6 +171,8 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                 </div>
               </div>
             )}
+
+            <p className="text-neutral-500 text-sm leading-relaxed mb-8">{product.description}</p>
 
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-100 mb-8">
               <div className="flex items-end justify-between mb-6">
