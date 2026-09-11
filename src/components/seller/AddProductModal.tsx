@@ -16,6 +16,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, onError }:
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<"Art Toy" | "Trading Card" | "Model">("Art Toy");
   const [price, setPrice] = useState("");
+  const [endTime, setEndTime] = useState("");
   const [description, setDescription] = useState("");
   
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -38,8 +39,8 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, onError }:
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !price) {
-      onError("Please fill in Product Title and Starting Bid/Price.");
+    if (!title || !price || !endTime) {
+      onError("Please fill in Product Title, Starting Bid, and End Time.");
       return;
     }
 
@@ -67,6 +68,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, onError }:
         title,
         category,
         price: Number(price),
+        endTime,
         description,
         imageUrl: finalImageUrl,
       };
@@ -109,8 +111,8 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, onError }:
             />
           </div>
 
-          {/* Category & Price */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+          {/* Category & Price & End Time */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
             <div>
               <label className="block text-sm font-bold text-neutral-700 mb-2">หมวดหมู่ (Category)</label>
               <select
@@ -131,6 +133,17 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, onError }:
                 placeholder="2500"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
+                className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl px-5 py-4 text-base text-black outline-none focus:border-black focus:bg-white transition-all"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-neutral-700 mb-2">วันสิ้นสุดประมูล (End Time)</label>
+              <input
+                type="datetime-local"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
                 className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl px-5 py-4 text-base text-black outline-none focus:border-black focus:bg-white transition-all"
                 required
               />

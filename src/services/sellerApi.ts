@@ -29,6 +29,7 @@ export interface CreateProductPayload {
   title: string;
   category: "Art Toy" | "Trading Card" | "Model";
   price: number;
+  endTime: string;
   description: string;
   imageUrl: string;
 }

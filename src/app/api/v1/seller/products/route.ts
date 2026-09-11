@@ -11,18 +11,17 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { title, category, price, description, imageUrl } = body;
+    const { title, category, price, endTime, description, imageUrl } = body;
 
-    if (!title || !category || !price) {
+    if (!title || !category || !price || !endTime) {
       return NextResponse.json(
-        { error: "Title, category, and price are required" },
+        { error: "Title, category, price, and end time are required" },
         { status: 400 }
       );
     }
 
-    // Default auction ends in 7 days
-    const endTime = new Date();
-    endTime.setDate(endTime.getDate() + 7);
+    // Parse the requested endTime from the frontend
+    const parsedEndTime = new Date(endTime);
 
     // Create the product in the database
     const newProduct = await prisma.product.create({
@@ -33,7 +32,7 @@ export async function POST(req: Request) {
         startPrice: Number(price),
         currentPrice: Number(price),
         description: description || "",
-        endTime,
+        endTime: parsedEndTime,
         status: "LIVE",
         images: {
           create: [
