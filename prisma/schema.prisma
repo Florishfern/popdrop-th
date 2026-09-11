@@ -80,6 +80,7 @@ model User {
   transactionsSell Transaction[] @relation("Seller")
   notifications Notification[]
   otpCodes      OtpCode[]
+  supportTickets SupportTicket[]
   
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -218,4 +219,18 @@ model Notification {
   isRead    Boolean  @default(false)
   
   createdAt DateTime @default(now())
+}
+
+model SupportTicket {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  topic         String
+  description   String
+  attachmentUrl String?
+  status        String   @default("OPEN")
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
