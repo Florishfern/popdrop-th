@@ -37,9 +37,13 @@ export async function GET(
       status: product.status,
       isAuction: true,
       imageUrl: product.images.length > 0 ? product.images[0].imageUrl : "https://via.placeholder.com/500",
-      category: "Art Toys", // Mocked as category is missing in DB
-      sellerName: product.seller.name,
-      sellerAvatar: product.seller.image,
+      category: product.category || "Art Toy",
+      seller: {
+        id: product.seller.id,
+        name: product.seller.name || "Unknown Seller",
+        avatar: product.seller.image || "https://api.dicebear.com/7.x/bottts/svg?seed=seller",
+        totalSalesCount: 0 // Mocked for now, can be fetched if needed
+      }
     };
 
     return NextResponse.json(formattedProduct);

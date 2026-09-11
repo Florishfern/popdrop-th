@@ -80,8 +80,12 @@ export async function GET(req: Request) {
       isAuction: true, // simplified for now
       imageUrl: p.images.length > 0 ? p.images[0].imageUrl : "https://via.placeholder.com/300",
       category: p.category || "Art Toy",
-      sellerName: p.seller?.name || "Unknown Seller",
-      sellerAvatar: p.seller?.image || "https://via.placeholder.com/50",
+      seller: {
+        id: p.seller?.id || "unknown",
+        name: p.seller?.name || "Unknown Seller",
+        avatar: p.seller?.image || "https://api.dicebear.com/7.x/bottts/svg?seed=seller",
+        totalSalesCount: 0
+      },
       viewsCount: 0, // Not in DB yet
       likesCount: p._count.bids // Use bids count as a proxy for engagement
     }));

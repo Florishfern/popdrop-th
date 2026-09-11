@@ -3,7 +3,7 @@
 import { useEffect, useState, use } from "react";
 import Image from "next/image";
 
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft, Sparkles, CheckCircle } from "lucide-react";
 import Tilt from "react-parallax-tilt";
 import Spline from "@splinetool/react-spline";
 import { motion } from "framer-motion";
@@ -95,6 +95,9 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
 
   const isCard = product.category.toLowerCase() === "card" || product.category.toLowerCase() === "trading card" || product.category.toLowerCase() === "pokemon" || product.category.toLowerCase() === "lorcana";
   const has3DModel = !!product.model3dUrl;
+  
+  const isTimeLive = product.endTime ? new Date(product.endTime) > new Date() : true;
+  const isLive = (product.status === "Live Auction" || product.status === "LIVE") && isTimeLive;
 
   return (
     <main className="min-h-screen w-full flex flex-col items-center bg-[var(--color-pop-bg)]">
@@ -144,13 +147,31 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
               <span className="bg-black text-white text-[10px] font-bold px-3 py-1 rounded-md uppercase">
                 {product.category}
               </span>
-              <span className={`text-[10px] font-bold px-3 py-1 rounded-md text-white ${product.status === "Live Auction" ? "bg-red-500 animate-pulse" : "bg-neutral-400"}`}>
-                {product.status}
+              <span className={`text-[10px] font-bold px-3 py-1 rounded-md text-white ${isLive ? "bg-[var(--color-pop-red)] animate-pulse" : "bg-neutral-400"}`}>
+                {isLive ? "LIVE" : product.status}
               </span>
             </div>
 
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-sans text-black mb-4 leading-tight">{product.title}</h1>
-            <p className="text-neutral-500 text-sm leading-relaxed mb-8">{product.description}</p>
+            <p className="text-neutral-500 text-sm leading-relaxed mb-6">{product.description}</p>
+
+            {/* Seller Profile */}
+            {product.seller && (
+              <div className="flex items-center gap-3 mb-8 bg-white p-4 rounded-2xl border border-neutral-100 shadow-sm">
+                <div className="relative w-12 h-12 rounded-full overflow-hidden border border-neutral-200">
+                  <Image src={product.seller.avatar} alt={product.seller.name} fill className="object-cover" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Seller</span>
+                  <span className="text-sm font-bold text-black flex items-center gap-1.5">
+                    {product.seller.name}
+                    {product.seller.totalSalesCount >= 100 && (
+                      <CheckCircle size={14} className="text-blue-500" />
+                    )}
+                  </span>
+                </div>
+              </div>
+            )}
 
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-100 mb-8">
               <div className="flex items-end justify-between mb-6">
@@ -158,7 +179,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                   <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Current Highest Bid</span>
                   <div className="text-4xl font-bold text-[var(--color-pop-red)]">฿{product.currentBid.toLocaleString()}</div>
                 </div>
-                {product.status === "Live Auction" && (
+                {isLive && (
                   <div className="flex flex-col items-end gap-1">
                     <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Ends In</span>
                     <div className="text-xl font-bold text-black font-mono">23:59:59</div>
@@ -166,7 +187,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                 )}
               </div>
 
-              {product.status === "Live Auction" ? (
+              {isLive ? (
                 <button
                   onClick={handleBid}
                   disabled={isBidding}
@@ -186,7 +207,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
             <div className="flex flex-col">
               <h3 className="text-lg font-bold text-black mb-4 flex items-center gap-2">
                 Live Bid History
-                {product.status === "Live Auction" && <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span></span>}
+                {isLive && <span className="relative flex h-2 w-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--color-pop-red)] opacity-75"></span><span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--color-pop-red)]"></span></span>}
               </h3>
 
               <div className="bg-white rounded-xl shadow-sm border border-neutral-100 overflow-hidden">

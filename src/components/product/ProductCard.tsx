@@ -12,18 +12,19 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, variant }: ProductCardProps) {
-  const isCard = product.category.toLowerCase() === "card" || product.category.toLowerCase() === "trading card" || product.category === "pokemon" || product.category === "lorcana";
-  const isLive = variant ? variant === "live" : product.status === "Live Auction";
+  const isCard = product.category.toLowerCase() === "card" || product.category.toLowerCase() === "trading card" || product.category.toLowerCase() === "pokemon" || product.category.toLowerCase() === "lorcana";
+  const isTimeLive = product.endTime ? new Date(product.endTime) > new Date() : true;
+  const isLive = variant ? variant === "live" : ((product.status === "Live Auction" || product.status === "LIVE") && isTimeLive);
 
   const cardContent = (
     <div className="relative w-full h-full rounded-2xl overflow-hidden bg-white shadow-lg border border-neutral-100 group flex flex-col">
       {/* Status Badge */}
       <div className="absolute top-3 right-3 z-10">
         <span
-          className={`text-[10px] font-bold px-2 py-1 rounded-md text-white shadow-sm ${product.status === "Live Auction" ? "bg-red-500 animate-pulse" : "bg-neutral-800"
+          className={`text-[10px] font-bold px-2 py-1 rounded-md text-white shadow-sm ${isLive ? "bg-[var(--color-pop-red)] animate-pulse" : "bg-neutral-800"
             }`}
         >
-          {product.status}
+          {isLive ? "LIVE" : product.status}
         </span>
       </div>
 
