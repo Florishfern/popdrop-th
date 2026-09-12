@@ -33,6 +33,7 @@ export async function GET(
       currentBid: product.currentPrice,
       price: product.startPrice,
       minBidStep: 100, // mock step
+      startTime: product.startTime.toISOString(),
       endTime: product.endTime.toISOString(),
       status: product.status,
       isAuction: true,

@@ -11,16 +11,17 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { title, category, price, endTime, description, imageUrl } = body;
+    const { title, category, price, startTime, endTime, description, imageUrl } = body;
 
-    if (!title || !category || !price || !endTime) {
+    if (!title || !category || !price || !startTime || !endTime) {
       return NextResponse.json(
-        { error: "Title, category, price, and end time are required" },
+        { error: "Title, category, price, start time, and end time are required" },
         { status: 400 }
       );
     }
 
-    // Parse the requested endTime from the frontend
+    // Parse the requested times from the frontend
+    const parsedStartTime = new Date(startTime);
     const parsedEndTime = new Date(endTime);
 
     // Create the product in the database
@@ -32,6 +33,7 @@ export async function POST(req: Request) {
         startPrice: Number(price),
         currentPrice: Number(price),
         description: description || "",
+        startTime: parsedStartTime,
         endTime: parsedEndTime,
         status: "LIVE",
         images: {

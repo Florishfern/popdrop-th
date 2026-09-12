@@ -16,6 +16,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, onError }:
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<"Art Toy" | "Trading Card" | "Model">("Art Toy");
   const [price, setPrice] = useState("");
+  const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [description, setDescription] = useState("");
   
@@ -39,8 +40,8 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, onError }:
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !price || !endTime) {
-      onError("Please fill in Product Title, Starting Bid, and End Time.");
+    if (!title || !price || !endTime || !startTime) {
+      onError("Please fill in Product Title, Starting Bid, Start Time, and End Time.");
       return;
     }
 
@@ -68,6 +69,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, onError }:
         title,
         category,
         price: Number(price),
+        startTime,
         endTime,
         description,
         imageUrl: finalImageUrl,
@@ -111,8 +113,8 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, onError }:
             />
           </div>
 
-          {/* Category & Price & End Time */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          {/* Category, Price, Start & End Time */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div>
               <label className="block text-sm font-bold text-neutral-700 mb-2">หมวดหมู่ (Category)</label>
               <select
@@ -133,6 +135,17 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, onError }:
                 placeholder="2500"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
+                className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl px-5 py-4 text-base text-black outline-none focus:border-black focus:bg-white transition-all"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-bold text-neutral-700 mb-2">เวลาเริ่มประมูล (Start Time)</label>
+              <input
+                type="datetime-local"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
                 className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl px-5 py-4 text-base text-black outline-none focus:border-black focus:bg-white transition-all"
                 required
               />

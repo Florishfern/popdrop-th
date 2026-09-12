@@ -75,6 +75,7 @@ export async function GET(req: Request) {
       description: p.description,
       currentBid: p.currentPrice,
       price: p.startPrice,
+      startTime: p.startTime.toISOString(),
       endTime: p.endTime.toISOString(),
       status: p.status,
       isAuction: true, // simplified for now

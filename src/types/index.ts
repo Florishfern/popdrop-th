@@ -13,6 +13,7 @@ export interface Product {
   model3dUrl?: string; // Optional Spline 3D model link
   currentBid: number;
   minBidStep: number;
+  startTime: string; // ISO Date String
   endTime: string; // ISO Date String for Countdown
   status: string;
   description: string;

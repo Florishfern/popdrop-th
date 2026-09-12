@@ -96,8 +96,11 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
   const isCard = product.category.toLowerCase() === "card" || product.category.toLowerCase() === "trading card" || product.category.toLowerCase() === "pokemon" || product.category.toLowerCase() === "lorcana";
   const has3DModel = !!product.model3dUrl;
   
-  const isTimeLive = product.endTime ? new Date(product.endTime) > new Date() : true;
-  const isLive = (product.status === "Live Auction" || product.status === "LIVE") && isTimeLive;
+  const now = new Date();
+  const startTime = product.startTime ? new Date(product.startTime) : now;
+  const isTimeLive = product.endTime ? new Date(product.endTime) > now : true;
+  const hasStarted = now >= startTime;
+  const isLive = hasStarted && isTimeLive && (product.status === "Live Auction" || product.status === "LIVE");
 
   return (
     <main className="min-h-screen w-full flex flex-col items-center bg-[var(--color-pop-bg)]">
@@ -147,12 +150,13 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
               <span className="bg-black text-white text-[10px] font-bold px-3 py-1 rounded-md uppercase">
                 {product.category}
               </span>
-              <span className={`text-[10px] font-bold px-3 py-1 rounded-md text-white ${isLive ? "bg-[var(--color-pop-red)] animate-pulse" : "bg-neutral-400"}`}>
+              <span className={`text-[10px] font-bold px-3 py-1 rounded-md uppercase ${isLive ? "text-[var(--color-pop-red)] bg-red-50 animate-pulse border border-red-100" : "text-white bg-neutral-400"}`}>
                 {isLive ? "LIVE" : product.status}
               </span>
             </div>
 
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-sans text-black mb-6 leading-tight">{product.title}</h1>
+            <p className="text-neutral-500 text-sm leading-relaxed mb-8">{product.description}</p>
             
             {/* Seller Profile (No Box) */}
             {product.seller && (
@@ -161,7 +165,6 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                   <Image src={product.seller.avatar} alt={product.seller.name} fill className="object-cover" />
                 </div>
                 <div className="flex flex-col justify-center">
-                  <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider leading-none mb-1.5">Listed by</span>
                   <span className="text-sm font-bold text-black flex items-center gap-1.5 leading-none">
                     {product.seller.name}
                     {product.seller.totalSalesCount >= 100 && (
@@ -172,20 +175,23 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
               </div>
             )}
 
-            <p className="text-neutral-500 text-sm leading-relaxed mb-8">{product.description}</p>
-
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-100 mb-8">
               <div className="flex items-end justify-between mb-6">
                 <div className="flex flex-col gap-1">
                   <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Current Highest Bid</span>
                   <div className="text-4xl font-bold text-[var(--color-pop-red)]">฿{product.currentBid.toLocaleString()}</div>
                 </div>
-                {isLive && (
+                {isLive ? (
                   <div className="flex flex-col items-end gap-1">
                     <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Ends In</span>
-                    <div className="text-xl font-bold text-black font-mono">23:59:59</div>
+                    <div className="text-xl font-bold text-[var(--color-pop-red)] font-mono">23:59:59</div>
                   </div>
-                )}
+                ) : (!hasStarted && isTimeLive) ? (
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Starts At</span>
+                    <div className="text-base font-bold text-black font-mono">{startTime.toLocaleString()}</div>
+                  </div>
+                ) : null}
               </div>
 
               {isLive ? (
@@ -196,6 +202,10 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                 >
                   <Sparkles size={18} />
                   {isBidding ? "Processing..." : `Bid Now (฿${(product.currentBid + product.minBidStep).toLocaleString()})`}
+                </button>
+              ) : (!hasStarted && isTimeLive) ? (
+                <button disabled className="w-full bg-neutral-200 text-neutral-500 py-4 rounded-xl font-bold text-sm cursor-not-allowed">
+                  Auction Upcoming
                 </button>
               ) : (
                 <button disabled className="w-full bg-neutral-200 text-neutral-500 py-4 rounded-xl font-bold text-sm cursor-not-allowed">

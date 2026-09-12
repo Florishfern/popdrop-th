@@ -27,13 +27,18 @@ async function getProductsForHome() {
     currentBid: p.currentPrice,
     price: p.startPrice,
     minBidStep: 100,
+    startTime: p.startTime.toISOString(),
     endTime: p.endTime.toISOString(),
     status: p.status,
     isAuction: true,
     imageUrl: p.images.length > 0 ? p.images[0].imageUrl : "https://via.placeholder.com/300",
-    category: "Art Toys",
-    sellerName: p.seller?.name || "Unknown Seller",
-    sellerAvatar: p.seller?.image || "https://via.placeholder.com/50",
+    category: p.category || "Art Toy",
+    seller: {
+      id: p.seller?.id || "unknown",
+      name: p.seller?.name || "Unknown Seller",
+      avatar: p.seller?.image || "https://via.placeholder.com/50",
+      totalSalesCount: 0
+    },
     viewsCount: 0,
     likesCount: p._count.bids
   }));

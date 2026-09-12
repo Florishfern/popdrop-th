@@ -147,6 +147,7 @@ model Product {
   description                String
   startPrice                 Float
   currentPrice               Float
+  startTime                  DateTime @default(now())
   endTime                    DateTime
   status                     String  @default("DRAFT") // DRAFT, LIVE, ENDED, SOLD
   allowInternationalShipping Boolean @default(false)
