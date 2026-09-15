@@ -8,16 +8,15 @@ import { Bell } from "lucide-react";
 
 interface ProductCardProps {
   product: Product;
-  variant?: "live" | "upcoming";
 }
 
-export default function ProductCard({ product, variant }: ProductCardProps) {
+export default function ProductCard({ product }: ProductCardProps) {
   const isCard = product.category.toLowerCase() === "card" || product.category.toLowerCase() === "trading card" || product.category.toLowerCase() === "pokemon" || product.category.toLowerCase() === "lorcana";
   const now = new Date();
   const startTime = product.startTime ? new Date(product.startTime) : now;
   const isTimeLive = product.endTime ? new Date(product.endTime) > now : true;
   const hasStarted = now >= startTime;
-  const isLive = variant ? variant === "live" : ((product.status === "Live Auction" || product.status === "LIVE") && isTimeLive && hasStarted);
+  const isLive = (product.status === "Live Auction" || product.status === "LIVE") && isTimeLive && hasStarted;
 
   const cardContent = (
     <div className="relative w-full h-full rounded-2xl overflow-hidden bg-white shadow-lg border border-neutral-100 group flex flex-col">

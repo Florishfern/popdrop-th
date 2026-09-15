@@ -258,7 +258,6 @@ function MarketplaceContent() {
               <div key={product.id} className="h-full">
                 <ProductCard
                   product={product}
-                  variant={product.status === "Live Auction" ? "live" : "upcoming"}
                 />
               </div>
             ))}
