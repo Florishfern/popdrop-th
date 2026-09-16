@@ -371,64 +371,6 @@ export async function getBuyerTransactions(params?: {
   search?: string;
   status?: string;
 }): Promise<BuyerTransactionItem[]> {
-  if (USE_MOCK) {
-    await new Promise((r) => setTimeout(r, 500));
-    const items: BuyerTransactionItem[] = [
-      {
-        id: "INV_000082",
-        productName: "Labubu Macaron Series",
-        price: 4500,
-        status: "Completed",
-        date: "18 Apr, 2026 10:15 AM",
-        carrier: "Kerry Express",
-        trackingNumber: "KRY-88291039",
-        imageUrl: "/images/hirono.png",
-      },
-      {
-        id: "INV_000079",
-        productName: "Hirono Little Mischief",
-        price: 2800,
-        status: "In Transit",
-        date: "17 Apr, 2026 03:45 PM",
-        carrier: "Flash Express",
-        trackingNumber: "FLS-99120301",
-        imageUrl: "/images/hirono.png",
-      },
-      {
-        id: "INV_000076",
-        productName: "Charizard Holographic Base Set",
-        price: 25500,
-        status: "Processing",
-        date: "16 Apr, 2026 01:20 PM",
-        carrier: null,
-        trackingNumber: null,
-        imageUrl: "/images/hirono.png",
-      },
-      {
-        id: "INV_000072",
-        productName: "Skullpanda City of Night",
-        price: 3200,
-        status: "Unpaid",
-        date: "15 Apr, 2026 09:30 AM",
-        carrier: null,
-        trackingNumber: null,
-        imageUrl: "/images/hirono.png",
-      },
-    ];
-
-    let filtered = [...items];
-    if (params?.search) {
-      const q = params.search.toLowerCase();
-      filtered = filtered.filter(
-        (item) => item.productName.toLowerCase().includes(q) || item.id.toLowerCase().includes(q)
-      );
-    }
-    if (params?.status && params.status !== "All") {
-      filtered = filtered.filter((item) => item.status === params.status);
-    }
-    return filtered;
-  }
-
   const query = new URLSearchParams();
   if (params?.search) query.append("search", params.search);
   if (params?.status) query.append("status", params.status);
@@ -437,6 +379,18 @@ export async function getBuyerTransactions(params?: {
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error("Failed to fetch buyer transactions");
+  return res.json();
+}
+
+/**
+ * Confirm Transaction Receipt
+ */
+export async function confirmTransactionReceipt(id: string): Promise<{ success: boolean }> {
+  const res = await fetch(`/api/v1/buyer/transactions/${id}/receive`, {
+    method: "PUT",
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error("Failed to confirm receipt");
   return res.json();
 }
 

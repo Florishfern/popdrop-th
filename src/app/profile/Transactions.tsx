@@ -11,13 +11,15 @@ import {
   AlertCircle,
   Copy
 } from "lucide-react";
-import { getBuyerTransactions, BuyerTransactionItem } from "@/services/profileApi";
+import { getBuyerTransactions, confirmTransactionReceipt, BuyerTransactionItem } from "@/services/profileApi";
 
 export default function Transactions() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("All");
   const [transactions, setTransactions] = useState<BuyerTransactionItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isConfirming, setIsConfirming] = useState<string | null>(null);
+  const [refresh, setRefresh] = useState(0);
 
   useEffect(() => {
     const loadTransactions = async () => {
@@ -37,7 +39,20 @@ export default function Transactions() {
 
     const timer = setTimeout(loadTransactions, 300);
     return () => clearTimeout(timer);
-  }, [searchTerm, filterStatus]);
+  }, [searchTerm, filterStatus, refresh]);
+
+  const handleConfirm = async (id: string) => {
+    try {
+      setIsConfirming(id);
+      await confirmTransactionReceipt(id);
+      setRefresh((prev) => prev + 1);
+    } catch (error) {
+      console.error("Failed to confirm receipt:", error);
+      alert("Failed to confirm receipt. Please try again.");
+    } finally {
+      setIsConfirming(null);
+    }
+  };
 
   const getStatusDisplay = (status: string) => {
     switch (status) {
@@ -109,7 +124,7 @@ export default function Transactions() {
 
         {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[950px]">
+          <table className="w-full text-left border-collapse min-w-[1050px]">
             <thead>
               <tr className="border-b border-neutral-100 text-neutral-400 text-xs font-bold uppercase tracking-wider">
                 <th className="pb-4 pl-2 pr-6">Order ID</th>
@@ -117,8 +132,8 @@ export default function Transactions() {
                 <th className="pb-4 pr-6">Price</th>
                 <th className="pb-4 pr-6">Status</th>
                 <th className="pb-4 pr-6">Tracking</th>
-                <th className="pb-4 pr-6">Date</th>
-                <th className="pb-4 pr-2 w-10 text-right"></th>
+                <th className="pb-4 pr-6 whitespace-nowrap">Date</th>
+                <th className="pb-4 pr-2 w-32 text-right"></th>
               </tr>
             </thead>
             <tbody>
@@ -179,13 +194,23 @@ export default function Transactions() {
                       )}
                     </td>
                     <td className="py-5 pr-6 text-sm text-neutral-500 font-medium whitespace-nowrap">{item.date}</td>
-                    <td className="py-5 pr-2 text-right text-neutral-300 group-hover:text-neutral-600 transition-colors cursor-pointer">
-                      <button
-                        className="p-1 hover:bg-neutral-200 rounded-lg"
-                        title="Actions"
-                      >
-                        <MoreHorizontal size={20} />
-                      </button>
+                    <td className="py-5 pr-2 text-right">
+                      {item.status === "In Transit" ? (
+                        <button
+                          onClick={() => handleConfirm(item.id)}
+                          disabled={isConfirming === item.id}
+                          className="bg-black text-white text-xs font-bold px-3 py-1.5 rounded-full hover:bg-neutral-800 transition-colors disabled:opacity-50 whitespace-nowrap"
+                        >
+                          {isConfirming === item.id ? "กำลังยืนยัน..." : "ได้รับของแล้ว"}
+                        </button>
+                      ) : (
+                        <button
+                          className="p-1 text-neutral-300 hover:bg-neutral-200 group-hover:text-neutral-600 rounded-lg transition-colors inline-block"
+                          title="Actions"
+                        >
+                          <MoreHorizontal size={20} />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))
