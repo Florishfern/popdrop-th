@@ -214,7 +214,7 @@ export default function SellerDashboard() {
               </div>
               <div className="flex items-end gap-3 mb-6 sm:mb-8">
                 <span className="text-3xl sm:text-4xl lg:text-5xl font-black text-black tracking-tight">
-                  ฿{(stats?.totalBalance || 689372).toLocaleString()}
+                  ฿{(stats?.totalBalance ?? 0).toLocaleString()}
                 </span>
               </div>
 
@@ -295,7 +295,7 @@ export default function SellerDashboard() {
                 </div>
               </div>
               <div className="flex flex-col gap-2 relative z-10 mt-4 sm:mt-6">
-                <span className="text-3xl sm:text-4xl font-black">฿{(stats?.totalIncome || 1050000).toLocaleString()}</span>
+                <span className="text-3xl sm:text-4xl font-black">฿{(stats?.totalIncome ?? 0).toLocaleString()}</span>
               </div>
             </div>
 
@@ -308,7 +308,7 @@ export default function SellerDashboard() {
                 </div>
               </div>
               <div className="flex flex-col gap-2 mt-4 sm:mt-6">
-                <span className="text-3xl sm:text-4xl font-black text-black">฿{(stats?.tradingCardSales || 700000).toLocaleString()}</span>
+                <span className="text-3xl sm:text-4xl font-black text-black">฿{(stats?.tradingCardSales ?? 0).toLocaleString()}</span>
               </div>
             </div>
 
@@ -321,7 +321,7 @@ export default function SellerDashboard() {
                 </div>
               </div>
               <div className="flex flex-col gap-2 mt-4 sm:mt-6">
-                <span className="text-3xl sm:text-4xl font-black text-black">฿{(stats?.artToySales || 950000).toLocaleString()}</span>
+                <span className="text-3xl sm:text-4xl font-black text-black">฿{(stats?.artToySales ?? 0).toLocaleString()}</span>
               </div>
             </div>
 
@@ -334,7 +334,7 @@ export default function SellerDashboard() {
                 </div>
               </div>
               <div className="flex flex-col gap-2 mt-4 sm:mt-6">
-                <span className="text-3xl sm:text-4xl font-black text-black">฿{(stats?.modelSales || 850000).toLocaleString()}</span>
+                <span className="text-3xl sm:text-4xl font-black text-black">฿{(stats?.modelSales ?? 0).toLocaleString()}</span>
               </div>
             </div>
           </div>
