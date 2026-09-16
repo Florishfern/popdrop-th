@@ -81,6 +81,7 @@ model User {
   notifications Notification[]
   otpCodes      OtpCode[]
   supportTickets SupportTicket[]
+  withdrawals   Withdrawal[]
   
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -209,6 +210,17 @@ model Payout {
   
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
+model Withdrawal {
+  id        String   @id @default(cuid())
+  sellerId  String
+  seller    User     @relation(fields: [sellerId], references: [id])
+  amount    Float
+  status    String   @default("PENDING") // PENDING, COMPLETED, REJECTED
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Notification {

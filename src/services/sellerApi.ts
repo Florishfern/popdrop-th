@@ -49,7 +49,7 @@ const getAuthHeaders = (): Record<string, string> => {
 /**
  * Fetch seller dashboard statistics
  */
-export async function getSellerStats(): Promise<SellerStats> {
+export async function getSellerStats(timeframe: string = "Month"): Promise<SellerStats> {
   if (USE_MOCK) {
     // Simulate API delay
     await new Promise((resolve) => setTimeout(resolve, 800));
@@ -63,12 +63,30 @@ export async function getSellerStats(): Promise<SellerStats> {
     };
   }
 
-  const res = await fetch("/api/v1/seller/stats", {
+  const res = await fetch(`/api/v1/seller/stats?timeframe=${timeframe}`, {
     headers: getAuthHeaders(),
   });
 
   if (!res.ok) {
     throw new Error(`Failed to fetch seller stats: ${res.statusText}`);
+  }
+
+  return res.json();
+}
+
+/**
+ * Request a withdrawal from seller balance
+ */
+export async function requestWithdrawal(amount: number): Promise<{ message: string }> {
+  const res = await fetch("/api/v1/seller/withdraw", {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ amount }),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || "Failed to process withdrawal request");
   }
 
   return res.json();

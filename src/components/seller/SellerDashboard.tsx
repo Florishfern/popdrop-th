@@ -30,6 +30,7 @@ import {
 import SellerDashboardSkeleton from "./SellerDashboardSkeleton";
 import AddProductModal from "./AddProductModal";
 import UpdateTrackingModal from "./UpdateTrackingModal";
+import WithdrawModal from "./WithdrawModal";
 import Toast, { ToastMessage } from "@/components/ui/Toast";
 import { useSellerRealtime } from "@/hooks/useSellerRealtime";
 
@@ -50,6 +51,7 @@ export default function SellerDashboard() {
 
   // Modals & Toasts
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
   const [selectedOrderForTracking, setSelectedOrderForTracking] = useState<SellerOrder | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
@@ -71,7 +73,7 @@ export default function SellerDashboard() {
       setLoading(true);
       setError(null);
       const [statsData, ordersData] = await Promise.all([
-        getSellerStats(),
+        getSellerStats(timeframe),
         getSellerOrders(),
       ]);
       setStats(statsData);
@@ -84,10 +86,9 @@ export default function SellerDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [addToast]);
+  }, [addToast, timeframe]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchData();
   }, [fetchData]);
 
@@ -151,6 +152,17 @@ export default function SellerDashboard() {
         onError={(msg) => addToast("error", msg)}
       />
 
+      <WithdrawModal
+        isOpen={isWithdrawModalOpen}
+        maxAmount={stats?.totalBalance || 0}
+        onClose={() => setIsWithdrawModalOpen(false)}
+        onSuccess={() => {
+          addToast("success", "ส่งคำขอถอนเงินเรียบร้อยแล้ว");
+          fetchData();
+        }}
+        onError={(msg) => addToast("error", msg)}
+      />
+
       <UpdateTrackingModal
         isOpen={!!selectedOrderForTracking}
         orderId={selectedOrderForTracking?.id || null}
@@ -207,11 +219,11 @@ export default function SellerDashboard() {
               </div>
 
               <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
-                <button className="flex-1 bg-black hover:bg-neutral-800 text-white font-bold py-3 sm:py-3.5 rounded-2xl text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-colors">
+                <button 
+                  onClick={() => setIsWithdrawModalOpen(true)}
+                  className="w-full bg-black hover:bg-neutral-800 text-white font-bold py-3 sm:py-3.5 rounded-2xl text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-colors"
+                >
                   <ArrowUpRight size={16} /> Withdraw
-                </button>
-                <button className="flex-1 bg-neutral-100 hover:bg-neutral-200 text-black font-bold py-3 sm:py-3.5 rounded-2xl text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2 transition-colors border border-neutral-200">
-                  <ArrowDownLeft size={16} /> Deposit
                 </button>
               </div>
 
