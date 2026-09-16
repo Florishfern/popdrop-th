@@ -124,7 +124,7 @@ export default function Transactions() {
 
         {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[1050px]">
+          <table className="w-full text-left border-collapse min-w-full">
             <thead>
               <tr className="border-b border-neutral-100 text-neutral-400 text-xs font-bold uppercase tracking-wider">
                 <th className="pb-4 pl-2 pr-6">Order ID</th>
@@ -169,7 +169,7 @@ export default function Transactions() {
                             className="object-cover" 
                           />
                         </div>
-                        <span className="font-bold text-sm text-black whitespace-nowrap">{item.productName}</span>
+                        <span className="font-bold text-sm text-black min-w-[150px]">{item.productName}</span>
                       </div>
                     </td>
                     <td className="py-5 pr-6 font-bold text-sm text-black whitespace-nowrap">฿{item.price.toLocaleString()}</td>
