@@ -373,8 +373,7 @@ export default function SellerDashboard() {
             <table className="w-full text-left border-collapse min-w-[800px]">
               <thead>
                 <tr className="border-b border-neutral-100 text-neutral-400 text-xs font-bold uppercase tracking-wider">
-                  <th className="pb-4 pl-4 w-12"><input type="checkbox" className="rounded border-neutral-300" /></th>
-                  <th className="pb-4">Order ID</th>
+                  <th className="pb-4 pl-4">Order ID</th>
                   <th className="pb-4">Activity</th>
                   <th className="pb-4">Price</th>
                   <th className="pb-4">Status</th>
@@ -386,15 +385,14 @@ export default function SellerDashboard() {
               <tbody>
                 {filteredOrders.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-8 text-center text-xs font-medium text-neutral-400">
+                    <td colSpan={7} className="py-8 text-center text-xs font-medium text-neutral-400">
                       ไม่พบรายการคำสั่งซื้อที่ค้นหา
                     </td>
                   </tr>
                 ) : (
                   filteredOrders.map((item) => (
                     <tr key={item.id} className="border-b border-neutral-50 hover:bg-neutral-50/50 transition-colors group">
-                      <td className="py-5 pl-4"><input type="checkbox" className="rounded border-neutral-300" /></td>
-                      <td className="py-5 font-medium text-sm text-neutral-600">{item.id}</td>
+                      <td className="py-5 pl-4 font-medium text-sm text-neutral-600">{item.id}</td>
                       <td className="py-5">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-xl bg-neutral-100 overflow-hidden relative shrink-0 border border-neutral-100 shadow-sm">

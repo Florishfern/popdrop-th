@@ -191,7 +191,9 @@ model Transaction {
   sellerId  String
   seller    User     @relation("Seller", fields: [sellerId], references: [id])
   amount    Float
-  status    String   @default("PENDING") // PENDING, PAID, SHIPPED
+  status    String   @default("PENDING") // PENDING, PAID, SHIPPED, DELIVERED
+  carrier   String?
+  trackingNumber String?
   
   payouts   Payout[]
   
