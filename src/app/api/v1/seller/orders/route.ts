@@ -12,46 +12,52 @@ export async function GET() {
 
     const userId = session.user.id;
 
-    const transactions = await prisma.transaction.findMany({
+    const products = await prisma.product.findMany({
       where: {
         sellerId: userId,
       },
       include: {
-        product: {
-          select: {
-            title: true,
-            category: true,
-            images: {
-              orderBy: { sortOrder: "asc" },
-            },
-            startTime: true,
-          }
+        images: {
+          orderBy: { sortOrder: "asc" },
         },
+        transaction: true,
       },
       orderBy: {
         createdAt: "desc",
       },
     });
 
-    const orders = transactions.map((t) => {
-      // Find primary image or use a default
+    const orders = products.map((p) => {
+      // Find primary image
       let imageUrl = "/images/placeholder.png";
-      if (t.product.images && t.product.images.length > 0) {
-        imageUrl = t.product.images[0].imageUrl;
+      if (p.images && p.images.length > 0) {
+        imageUrl = p.images[0].imageUrl;
       }
 
       // Map status
-      let mappedStatus = "Pending";
-      if (t.status === "SHIPPED") {
-        mappedStatus = "In Progress";
-      } else if (t.status === "DELIVERED") {
-        mappedStatus = "Completed";
+      let mappedStatus = "Draft";
+      if (p.transaction) {
+        if (p.transaction.status === "PENDING") {
+          mappedStatus = "Pending";
+        } else if (p.transaction.status === "SHIPPED") {
+          mappedStatus = "In Progress";
+        } else if (p.transaction.status === "DELIVERED") {
+          mappedStatus = "Completed";
+        }
+      } else {
+        if (p.status === "LIVE") {
+          mappedStatus = "Live";
+        } else if (p.status === "ENDED") {
+          mappedStatus = "Ended";
+        } else {
+          mappedStatus = "Draft";
+        }
       }
 
       // Format date (startTime) e.g., "17 Apr, 2026 03:45 PM"
       let formattedDate = "";
-      if (t.product.startTime) {
-        const dateObj = new Date(t.product.startTime);
+      if (p.startTime) {
+        const dateObj = new Date(p.startTime);
         
         const day = dateObj.getDate();
         const month = dateObj.toLocaleString("en-US", { month: "short" });
@@ -69,15 +75,15 @@ export async function GET() {
       }
 
       return {
-        id: t.id,
-        activity: t.product.title,
-        type: t.product.category,
+        id: p.transaction ? p.transaction.id : p.id,
+        activity: p.title,
+        type: p.category,
         imageUrl: imageUrl,
-        price: t.amount,
+        price: p.transaction ? p.transaction.amount : p.currentPrice,
         status: mappedStatus,
         date: formattedDate,
-        carrier: t.carrier || undefined,
-        trackingNumber: t.trackingNumber || undefined,
+        carrier: p.transaction?.carrier || undefined,
+        trackingNumber: p.transaction?.trackingNumber || undefined,
       };
     });
 
