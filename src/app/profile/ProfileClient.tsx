@@ -322,7 +322,30 @@ export default function ProfileClient() {
           <>
             {activeTab === "Edit Profile" && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-black mb-8">Edit Profile</h1>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-black">Edit Profile</h1>
+                  
+                  {/* DEV: Mock Verification Button */}
+                  <button
+                    onClick={async () => {
+                      try {
+                        const res = await fetch("/api/v1/user/mock-verify", { method: "POST" });
+                        if (res.ok) {
+                          alert("Mock verification complete! Please refresh the page.");
+                          window.location.reload();
+                        } else {
+                          alert("Failed to mock verify");
+                        }
+                      } catch (e) {
+                        alert("Error mocking verification");
+                      }
+                    }}
+                    className="bg-purple-100 hover:bg-purple-200 text-purple-700 border border-purple-200 px-4 py-2 rounded-xl text-xs font-bold transition-colors w-fit flex items-center gap-2"
+                  >
+                    <BadgeCheck size={16} />
+                    [DEV] Quick Verify All
+                  </button>
+                </div>
 
                 <div className="flex flex-col gap-8">
                   {/* Avatar Section */}

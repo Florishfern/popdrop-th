@@ -288,7 +288,13 @@ export async function createProduct(
   });
 
   if (!res.ok) {
-    throw new Error(`Failed to create product: ${res.statusText}`);
+    const errorData = await res.json().catch(() => null);
+    if (res.status === 403 && errorData?.missingRequirements) {
+      const err = new Error(errorData.error || "Prerequisites missing");
+      (err as any).missingRequirements = errorData.missingRequirements;
+      throw err;
+    }
+    throw new Error(errorData?.message || errorData?.error || `Failed to create product: ${res.statusText}`);
   }
 
   return res.json();

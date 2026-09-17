@@ -71,8 +71,20 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
 
       // Auto hide toast
       setTimeout(() => setToastMessage(null), 3000);
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      if (error.missingRequirements) {
+        const reqs = error.missingRequirements as string[];
+        const translations: Record<string, string> = {
+          "phone_verified": "ยืนยันเบอร์โทรศัพท์",
+          "credit_card": "ผูกบัตรเครดิต"
+        };
+        const msg = reqs.map((r) => translations[r] || r).join(", ");
+        setToastMessage(`ไม่สามารถประมูลได้ กรุณาไปที่ Profile เพื่อ: ${msg}`);
+      } else {
+        const errorMessage = error instanceof Error ? error.message : "Failed to place bid";
+        setToastMessage(errorMessage);
+      }
+      setTimeout(() => setToastMessage(null), 5000);
     } finally {
       setIsBidding(false);
     }

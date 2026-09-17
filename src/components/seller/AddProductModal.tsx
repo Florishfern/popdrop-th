@@ -78,9 +78,21 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, onError }:
       await createProduct(payload);
       onSuccess(payload);
       onClose();
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to create product";
-      onError(errorMessage);
+    } catch (err: any) {
+      if (err.missingRequirements) {
+        const reqs = err.missingRequirements as string[];
+        const translations: Record<string, string> = {
+          "phone_verified": "ยืนยันเบอร์โทรศัพท์",
+          "credit_card": "ผูกบัตรเครดิต",
+          "identity_verified": "ยืนยันเอกสารประจำตัว (KYC)",
+          "bank_account": "เพิ่มบัญชีธนาคารสำหรับถอนเงิน"
+        };
+        const msg = reqs.map((r) => translations[r] || r).join(", ");
+        onError(`ไม่สามารถลงขายได้ กรุณาทำรายการต่อไปนี้ให้เสร็จสิ้นในหน้า Profile: ${msg}`);
+      } else {
+        const errorMessage = err instanceof Error ? err.message : "Failed to create product";
+        onError(errorMessage);
+      }
     } finally {
       setIsUploading(false);
       setIsSubmitting(false);

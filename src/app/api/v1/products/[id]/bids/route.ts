@@ -55,6 +55,34 @@ export async function POST(
       return NextResponse.json({ message: "Invalid bid amount" }, { status: 400 });
     }
 
+    // Verify Buyer Prerequisites
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      include: { creditCards: true },
+    });
+
+    if (!user) {
+      return NextResponse.json({ message: "User not found" }, { status: 404 });
+    }
+
+    const missingRequirements = [];
+    if (!user.phoneVerified) {
+      missingRequirements.push("phone_verified");
+    }
+    if (user.creditCards.length === 0) {
+      missingRequirements.push("credit_card");
+    }
+
+    if (missingRequirements.length > 0) {
+      return NextResponse.json(
+        { 
+          error: "Prerequisites missing", 
+          missingRequirements 
+        },
+        { status: 403 }
+      );
+    }
+
     // Run within a transaction to prevent race conditions
     const result = await prisma.$transaction(async (tx) => {
       const product = await tx.product.findUnique({

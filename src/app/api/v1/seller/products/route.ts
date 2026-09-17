@@ -24,6 +24,44 @@ export async function POST(req: Request) {
     const parsedStartTime = new Date(startTime);
     const parsedEndTime = new Date(endTime);
 
+    // Fetch user and seller info to verify prerequisites
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      include: {
+        creditCards: true,
+        sellerInfo: true,
+      },
+    });
+
+    if (!user) {
+      return NextResponse.json({ message: "User not found" }, { status: 404 });
+    }
+
+    const missingRequirements = [];
+    
+    if (!user.phoneVerified) {
+      missingRequirements.push("phone_verified");
+    }
+    if (user.creditCards.length === 0) {
+      missingRequirements.push("credit_card");
+    }
+    if (!user.sellerInfo?.isVerifiedDocument && user.sellerInfo?.idCardStatus !== "APPROVED") {
+      missingRequirements.push("identity_verified");
+    }
+    if (!user.sellerInfo?.bankAccountNo) {
+      missingRequirements.push("bank_account");
+    }
+
+    if (missingRequirements.length > 0) {
+      return NextResponse.json(
+        { 
+          error: "Prerequisites missing", 
+          missingRequirements 
+        },
+        { status: 403 }
+      );
+    }
+
     // Create the product in the database
     const newProduct = await prisma.product.create({
       data: {

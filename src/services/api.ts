@@ -131,7 +131,15 @@ export const placeBid = async (payload: BidRequestPayload): Promise<{ success: b
     headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   });
-  if (!res.ok) throw new Error("Failed to place bid");
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => null);
+    if (res.status === 403 && errorData?.missingRequirements) {
+      const err = new Error(errorData.error || "Prerequisites missing");
+      (err as any).missingRequirements = errorData.missingRequirements;
+      throw err;
+    }
+    throw new Error(errorData?.message || errorData?.error || "Failed to place bid");
+  }
   return res.json();
 };
 
