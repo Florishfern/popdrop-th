@@ -12,6 +12,8 @@ import Navbar from "@/components/layout/Navbar";
 import { Product, BidHistory } from "@/types";
 import { fetchProductById, fetchBidHistory, placeBid, fetchRelatedProducts } from "@/services/api";
 import ProductCard from "@/components/product/ProductCard";
+import { useSession } from "next-auth/react";
+import { useRouter, usePathname } from "next/navigation";
 
 export default function ProductDetail({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -23,6 +25,10 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
   const [loading, setLoading] = useState(true);
   const [isBidding, setIsBidding] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const { data: session } = useSession();
+  const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     fetchProductById(productId).then((data) => {
@@ -54,6 +60,11 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
   }, [product?.status, productId]);
 
   const handleBid = async () => {
+    if (!session || !session.user) {
+      router.push(`/login?callbackUrl=${encodeURIComponent(pathname)}`);
+      return;
+    }
+
     if (!product) return;
     setIsBidding(true);
 

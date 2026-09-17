@@ -248,7 +248,7 @@ export default function Navbar() {
               <User size={18} />
             </Link>
           ) : (
-            <Link href="/login" className="px-4 py-2 rounded-full bg-black hover:bg-neutral-800 text-white text-sm font-semibold transition-all active:scale-95 shrink-0 shadow-sm">
+            <Link href={`/login?callbackUrl=${encodeURIComponent(pathname)}`} className="px-4 py-2 rounded-full bg-black hover:bg-neutral-800 text-white text-sm font-semibold transition-all active:scale-95 shrink-0 shadow-sm">
               Sign In
             </Link>
           )}
@@ -334,7 +334,7 @@ export default function Navbar() {
                     <User size={24} />
                   </Link>
                 ) : (
-                  <Link href="/login" onClick={() => setMenuOpen(false)} className="px-6 py-3 rounded-full bg-black text-white font-semibold">
+                  <Link href={`/login?callbackUrl=${encodeURIComponent(pathname)}`} onClick={() => setMenuOpen(false)} className="px-6 py-3 rounded-full bg-black text-white font-semibold">
                     Sign In
                   </Link>
                 )}
