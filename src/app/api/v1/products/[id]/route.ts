@@ -32,7 +32,7 @@ export async function GET(
       description: product.description,
       currentBid: product.currentPrice,
       price: product.startPrice,
-      minBidStep: 100, // mock step
+      minBidStep: Math.round(product.startPrice * 0.05),
       startTime: product.startTime.toISOString(),
       endTime: product.endTime.toISOString(),
       status: product.status,

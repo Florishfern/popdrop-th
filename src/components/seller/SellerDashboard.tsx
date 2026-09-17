@@ -25,7 +25,8 @@ import {
   getSellerOrders, 
   SellerStats, 
   SellerOrder, 
-  CreateProductPayload 
+  CreateProductPayload,
+  deleteProduct
 } from "@/services/sellerApi";
 import SellerDashboardSkeleton from "./SellerDashboardSkeleton";
 import AddProductModal from "./AddProductModal";
@@ -54,6 +55,7 @@ export default function SellerDashboard() {
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
   const [selectedOrderForTracking, setSelectedOrderForTracking] = useState<SellerOrder | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
 
   const addToast = useCallback((type: "success" | "error" | "info", text: string) => {
     const id = Date.now().toString();
@@ -114,6 +116,19 @@ export default function SellerDashboard() {
       )
     );
     addToast("success", `อัปเดตเลขพัสดุ ${carrier} (${trackingNumber}) สำหรับ ${orderId} แล้ว`);
+  };
+
+  const handleDeleteProduct = async (productId: string) => {
+    if (!confirm("Are you sure you want to delete this product?")) return;
+    try {
+      await deleteProduct(productId);
+      addToast("success", "ลบสินค้าสำเร็จ");
+      fetchData();
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to delete product";
+      addToast("error", errorMessage);
+    }
+    setActiveDropdownId(null);
   };
 
   const getStatusDisplay = (status: string) => {
@@ -424,14 +439,41 @@ export default function SellerDashboard() {
                         )}
                       </td>
                       <td className="py-5 text-sm text-neutral-500 font-medium">{item.date}</td>
-                      <td className="py-5 text-neutral-300 group-hover:text-neutral-600 transition-colors cursor-pointer">
+                      <td className="py-5 text-neutral-300 transition-colors relative">
                         <button
-                          onClick={() => setSelectedOrderForTracking(item)}
-                          className="p-1 hover:bg-neutral-200 rounded-lg"
-                          title="อัปเดตพัสดุ"
+                          onClick={() => setActiveDropdownId(activeDropdownId === item.id ? null : item.id)}
+                          className={`p-1 rounded-lg transition-colors ${activeDropdownId === item.id ? 'bg-neutral-200 text-black' : 'hover:bg-neutral-200 hover:text-neutral-600'}`}
                         >
                           <MoreHorizontal size={20} />
                         </button>
+
+                        {/* Dropdown Menu */}
+                        {activeDropdownId === item.id && (
+                          <div className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-lg border border-neutral-100 py-2 z-10 flex flex-col">
+                            {/* Option 1: Update Tracking (If applicable) */}
+                            {(item.status === "Pending" || item.status === "In Progress" || item.status === "Completed") && (
+                              <button
+                                onClick={() => {
+                                  setSelectedOrderForTracking(item);
+                                  setActiveDropdownId(null);
+                                }}
+                                className="w-full text-left px-4 py-2 text-sm font-bold text-neutral-700 hover:bg-neutral-50 transition-colors"
+                              >
+                                อัปเดตพัสดุ
+                              </button>
+                            )}
+
+                            {/* Option 2: Delete Product (If Draft / hasn't started) */}
+                            {(item.status === "Draft") && (
+                              <button
+                                onClick={() => item.productId && handleDeleteProduct(item.productId)}
+                                className="w-full text-left px-4 py-2 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors"
+                              >
+                                ลบสินค้า
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))

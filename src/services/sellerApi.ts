@@ -8,15 +8,17 @@ export interface SellerStats {
 }
 
 export interface SellerOrder {
-  id: string;
-  activity: string;
-  type: "Art Toy" | "Trading Card" | "Model";
+  id: string; // Could be transaction ID or product ID
+  productId?: string;
+  activity: string; // Product title
+  type: string;     // Category
   imageUrl: string;
   price: number;
-  status: "Completed" | "Pending" | "In Progress";
+  status: string;
   date: string;
   carrier?: string;
   trackingNumber?: string;
+  startTime?: string;
 }
 
 export interface PresignedUrlResponse {
@@ -159,6 +161,23 @@ export async function getSellerOrders(): Promise<SellerOrder[]> {
 
   if (!res.ok) {
     throw new Error(`Failed to fetch seller orders: ${res.statusText}`);
+  }
+
+  return res.json();
+}
+
+/**
+ * Delete a product before it goes live
+ */
+export async function deleteProduct(productId: string): Promise<{ success: boolean; message: string }> {
+  const res = await fetch(`/api/v1/seller/products/${productId}`, {
+    method: "DELETE",
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => null);
+    throw new Error(errorData?.message || `Failed to delete product: ${res.statusText}`);
   }
 
   return res.json();

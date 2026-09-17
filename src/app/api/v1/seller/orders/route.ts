@@ -76,6 +76,7 @@ export async function GET() {
 
       return {
         id: p.transaction ? p.transaction.id : p.id,
+        productId: p.id,
         activity: p.title,
         type: p.category,
         imageUrl: imageUrl,
@@ -84,6 +85,7 @@ export async function GET() {
         date: formattedDate,
         carrier: p.transaction?.carrier || undefined,
         trackingNumber: p.transaction?.trackingNumber || undefined,
+        startTime: p.startTime.toISOString(),
       };
     });
 

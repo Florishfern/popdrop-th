@@ -17,7 +17,7 @@ export async function GET(req: Request) {
 
     // Build the Prisma where clause dynamically
     const whereClause: any = {
-      status: { not: "DRAFT" }
+      status: { notIn: ["DRAFT", "SOLD", "ENDED"] }
     };
 
     if (search) {

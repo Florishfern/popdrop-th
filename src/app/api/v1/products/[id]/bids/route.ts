@@ -98,8 +98,11 @@ export async function POST(
         throw new Error("Bidding is not active for this product");
       }
 
-      if (bidAmount <= product.currentPrice) {
-        throw new Error("Bid must be higher than current price");
+      const minBidStep = Math.round(product.startPrice * 0.05);
+      const minRequiredBid = product.currentPrice + minBidStep;
+
+      if (bidAmount < minRequiredBid) {
+        throw new Error(`Bid must be at least ฿${minRequiredBid.toLocaleString()}`);
       }
 
       // Find the previous highest bidder to notify them
