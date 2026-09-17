@@ -1,38 +1,121 @@
 import { NextResponse } from "next/server";
-
-// Mock database in memory
-let mockBids = [
-  { id: '1', productId: '1', username: 'user_123', bidAmount: 5300, timestamp: new Date(Date.now() - 50000).toISOString() },
-  { id: '2', productId: '1', username: 'crypto_king', bidAmount: 5400, timestamp: new Date().toISOString() },
-];
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import prisma from "@/lib/prisma";
+import { createNotification } from "@/lib/notificationService";
 
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const resolvedParams = await params;
-  const productId = resolvedParams.id;
-  const bids = mockBids.filter(b => b.productId === productId);
-  return NextResponse.json(bids);
+  try {
+    const resolvedParams = await params;
+    const productId = resolvedParams.id;
+
+    const bids = await prisma.bid.findMany({
+      where: { productId },
+      include: {
+        bidder: { select: { name: true, image: true, id: true } },
+      },
+      orderBy: { amount: "desc" },
+    });
+
+    const formattedBids = bids.map((b) => ({
+      id: b.id,
+      productId: b.productId,
+      username: b.bidder.name || "User",
+      bidAmount: b.amount,
+      timestamp: b.createdAt.toISOString(),
+      avatar: b.bidder.image,
+    }));
+
+    return NextResponse.json(formattedBids);
+  } catch (error) {
+    console.error("Get Bids Error:", error);
+    return NextResponse.json({ message: "Failed to fetch bids" }, { status: 500 });
+  }
 }
 
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const resolvedParams = await params;
-  const productId = resolvedParams.id;
-  const body = await req.json();
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
 
-  const newBid = {
-    id: Math.random().toString(36).substr(2, 9),
-    productId,
-    username: body.userId || "anonymous",
-    bidAmount: body.bidAmount,
-    timestamp: new Date().toISOString(),
-  };
+    const resolvedParams = await params;
+    const productId = resolvedParams.id;
+    const body = await req.json();
+    const { bidAmount } = body;
 
-  mockBids = [newBid, ...mockBids];
+    if (!bidAmount || isNaN(bidAmount)) {
+      return NextResponse.json({ message: "Invalid bid amount" }, { status: 400 });
+    }
 
-  return NextResponse.json({ success: true, message: "Bid placed successfully!" });
+    // Run within a transaction to prevent race conditions
+    const result = await prisma.$transaction(async (tx) => {
+      const product = await tx.product.findUnique({
+        where: { id: productId },
+        include: { images: { take: 1 } },
+      });
+
+      if (!product) {
+        throw new Error("Product not found");
+      }
+
+      if (product.status !== "LIVE") {
+        throw new Error("Bidding is not active for this product");
+      }
+
+      if (bidAmount <= product.currentPrice) {
+        throw new Error("Bid must be higher than current price");
+      }
+
+      // Find the previous highest bidder to notify them
+      const previousHighestBid = await tx.bid.findFirst({
+        where: { productId },
+        orderBy: { amount: "desc" },
+      });
+
+      // Update product current price
+      await tx.product.update({
+        where: { id: productId },
+        data: { currentPrice: bidAmount },
+      });
+
+      // Create new bid
+      const newBid = await tx.bid.create({
+        data: {
+          productId,
+          bidderId: session.user.id,
+          amount: bidAmount,
+        },
+      });
+
+      return { product, previousHighestBid, newBid };
+    });
+
+    // Send Outbid Notification OUTSIDE the transaction
+    if (result.previousHighestBid && result.previousHighestBid.bidderId !== session.user.id) {
+      await createNotification({
+        userId: result.previousHighestBid.bidderId,
+        title: "มีผู้เสนอราคาสูงกว่าคุณ",
+        message: `มีผู้เสนอราคาสูงกว่าคุณสำหรับสินค้า "${result.product.title}" เสนอราคาใหม่เพื่อเป็นผู้ชนะ!`,
+        type: "OUTBID",
+        link: `/market/${productId}`,
+        imageUrl: result.product.images[0]?.imageUrl,
+      });
+    }
+
+    return NextResponse.json({ success: true, message: "Bid placed successfully!" });
+  } catch (error: any) {
+    console.error("Place Bid Error:", error);
+    return NextResponse.json(
+      { message: error.message || "Failed to place bid" },
+      { status: error.message === "Product not found" ? 404 : 400 }
+    );
+  }
 }

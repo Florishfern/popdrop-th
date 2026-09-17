@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { createNotification } from "@/lib/notificationService";
 
 export async function PUT(
   request: NextRequest,
@@ -21,6 +22,10 @@ export async function PUT(
         id,
         buyerId: session.user.id,
       },
+      include: {
+        product: true,
+        seller: true,
+      }
     });
 
     if (!transaction) {
@@ -31,12 +36,53 @@ export async function PUT(
     }
 
     // Update the transaction status to DELIVERED
-    const updatedTransaction = await prisma.transaction.update({
+    await prisma.transaction.update({
       where: { id },
       data: {
         status: "DELIVERED",
       },
     });
+
+    // --- NOTIFICATIONS & BADGE LOGIC ---
+
+    // 1. Notify Seller that buyer received the item
+    await createNotification({
+      userId: transaction.sellerId,
+      title: "จัดส่งสินค้าสำเร็จ",
+      message: `ผู้ซื้อได้รับสินค้า "${transaction.product.title}" แล้ว (Order ID: ${transaction.id})`,
+      type: "SUCCESS",
+      link: "/seller",
+    });
+
+    // 2. Check if Seller has unlocked Top Seller Badge (e.g. 100 sales)
+    const sellerInfo = await prisma.sellerInfo.findUnique({
+      where: { userId: transaction.sellerId }
+    });
+
+    if (sellerInfo && !sellerInfo.hasTopSellerBadge) {
+      const deliveredCount = await prisma.transaction.count({
+        where: {
+          sellerId: transaction.sellerId,
+          status: "DELIVERED"
+        }
+      });
+
+      if (deliveredCount >= 100) { // Condition to unlock badge
+        await prisma.sellerInfo.update({
+          where: { userId: transaction.sellerId },
+          data: { hasTopSellerBadge: true }
+        });
+
+        // Notify Seller about Badge
+        await createNotification({
+          userId: transaction.sellerId,
+          title: "ยินดีด้วย!",
+          message: "คุณทำการขายสำเร็จครบ 100 รายการ และได้รับ Seller Badge แล้ว!",
+          type: "INFO",
+          link: "/seller/profile",
+        });
+      }
+    }
 
     return NextResponse.json({
       success: true,

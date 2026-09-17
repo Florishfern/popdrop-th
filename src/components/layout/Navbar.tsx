@@ -13,78 +13,16 @@ const navLinks = [
   { name: "seller", href: "/seller" },
 ];
 
-const initialNotifications = [
-  {
-    id: 1,
-    title: "คุณชนะการประมูล!",
-    description: "POP MART LABUBU The Monsters Exciting Macaron",
-    time: "2 นาทีที่แล้ว",
-    icon: <Gavel size={20} className="text-white" />,
-    color: "bg-purple-500",
-    href: "/profile",
-    read: false,
-  },
-  {
-    id: 2,
-    title: "ชำระเงินสำเร็จ",
-    description: "คำสั่งซื้อ #123456 ได้รับการชำระเงินแล้ว",
-    time: "1 ชั่วโมงที่แล้ว",
-    icon: <CheckCircle size={20} className="text-white" />,
-    color: "bg-green-500",
-    href: "/profile",
-    read: false,
-  },
-  {
-    id: 3,
-    title: "สินค้ากำลังจัดส่ง",
-    description: "CRYBABY x Powerpuff Girls Series Figures",
-    time: "3 ชั่วโมงที่แล้ว",
-    icon: <Package size={20} className="text-white" />,
-    color: "bg-blue-500",
-    href: "/profile",
-    read: true,
-  },
-  {
-    id: 4,
-    title: "มีผู้เสนอราคาสูงกว่าคุณ",
-    description: "Hirono V1 Series",
-    time: "5 ชั่วโมงที่แล้ว",
-    icon: <Gavel size={20} className="text-white" />,
-    color: "bg-orange-500",
-    href: "/profile",
-    read: true,
-  },
-  {
-    id: 5,
-    title: "รายการสินค้าของคุณถูกขายแล้ว",
-    description: "Skullpanda City of Night",
-    time: "1 วันที่แล้ว",
-    icon: <CheckCircle size={20} className="text-white" />,
-    color: "bg-green-500",
-    href: "/profile",
-    read: true,
-  },
-  {
-    id: 6,
-    title: "จัดส่งสินค้าสำเร็จ",
-    description: "Molly Space 100%",
-    time: "2 วันที่แล้ว",
-    icon: <Package size={20} className="text-white" />,
-    color: "bg-blue-500",
-    href: "/profile",
-    read: true,
-  },
-  {
-    id: 7,
-    title: "คุณชนะการประมูล!",
-    description: "Dimoo Jurassic World",
-    time: "3 วันที่แล้ว",
-    icon: <Gavel size={20} className="text-white" />,
-    color: "bg-purple-500",
-    href: "/profile",
-    read: true,
-  },
-];
+type NotificationItem = {
+  id: string;
+  title: string;
+  message: string;
+  type: string;
+  link: string | null;
+  imageUrl: string | null;
+  isRead: boolean;
+  createdAt: string;
+};
 
 export default function Navbar() {
   const { data: session } = useSession();
@@ -94,7 +32,7 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [viewAll, setViewAll] = useState(false);
-  const [notifications, setNotifications] = useState(initialNotifications);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const notificationRef = useRef<HTMLDivElement>(null);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -107,7 +45,7 @@ export default function Navbar() {
     setMenuOpen(false);
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -117,27 +55,64 @@ export default function Navbar() {
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleToggleNotifications = () => {
-    if (notificationsOpen) {
-      setViewAll(false);
+  useEffect(() => {
+    if (session?.user) {
+      fetch("/api/v1/notifications")
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data)) setNotifications(data);
+        })
+        .catch((err) => console.error("Failed to fetch notifications", err));
     }
+  }, [session]);
+
+  const handleToggleNotifications = () => {
+    if (notificationsOpen) setViewAll(false);
     setNotificationsOpen(!notificationsOpen);
   };
 
-  const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  const markAllAsRead = async () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    try {
+      await fetch("/api/v1/notifications", { method: "PUT" });
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const markAsRead = (id: number) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  const markAsRead = async (id: string, link: string | null) => {
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
+    try {
+      await fetch(`/api/v1/notifications/${id}/read`, { method: "PUT" });
+    } catch (err) {
+      console.error(err);
+    }
+    if (link) {
+      router.push(link);
+      setNotificationsOpen(false);
+    }
   };
 
-  const displayNotifications = viewAll ? notifications : notifications.slice(0, 3);
+  const displayNotifications = viewAll ? notifications : notifications.slice(0, 4);
+
+  const getNotificationStyle = (type: string) => {
+    switch (type) {
+      case "WON":
+      case "SOLD":
+      case "SUCCESS":
+        return { icon: <CheckCircle size={20} className="text-white" />, color: "bg-green-500" };
+      case "BID":
+      case "OUTBID":
+        return { icon: <Gavel size={20} className="text-white" />, color: "bg-orange-500" };
+      case "LIVE":
+        return { icon: <Gavel size={20} className="text-white" />, color: "bg-purple-500" };
+      default:
+        return { icon: <Package size={20} className="text-white" />, color: "bg-blue-500" };
+    }
+  };
 
   return (
     <>
@@ -217,32 +192,34 @@ export default function Navbar() {
                   </div>
                   
                   <div className={`overflow-y-auto transition-all duration-300 ${viewAll ? 'max-h-[60vh] sm:max-h-[500px]' : 'max-h-[400px]'}`}>
-                    {displayNotifications.map((notif) => (
-                      <Link 
-                        key={notif.id} 
-                        href={notif.href}
-                        onClick={() => {
-                          markAsRead(notif.id);
-                          setNotificationsOpen(false);
-                          setViewAll(false);
-                        }}
-                        className={`flex gap-3 p-4 hover:bg-neutral-50 transition-colors border-b border-neutral-50 last:border-0 ${!notif.read ? 'bg-[var(--color-pop-red)]/5' : ''}`}
-                      >
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${notif.color}`}>
-                          {notif.icon}
-                        </div>
-                        <div className="flex flex-col flex-1 min-w-0">
-                          <p className={`text-sm truncate ${!notif.read ? 'font-bold text-black' : 'font-medium text-neutral-700'}`}>
-                            {notif.title}
-                          </p>
-                          <p className="text-neutral-500 text-xs line-clamp-2 mt-0.5">{notif.description}</p>
-                          <p className="text-neutral-400 text-[10px] mt-1.5">{notif.time}</p>
-                        </div>
-                        {!notif.read && (
+                    {displayNotifications.map((notif) => {
+                      const style = getNotificationStyle(notif.type);
+                      return (
+                        <Link 
+                          key={notif.id} 
+                          href={notif.link || "/profile"}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            markAsRead(notif.id, notif.link);
+                          }}
+                          className={`flex gap-3 p-4 hover:bg-neutral-50 transition-colors border-b border-neutral-50 last:border-0 ${!notif.isRead ? 'bg-[var(--color-pop-red)]/5' : ''}`}
+                        >
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${style.color}`}>
+                            {style.icon}
+                          </div>
+                          <div className="flex flex-col flex-1 min-w-0">
+                            <p className={`text-sm truncate ${!notif.isRead ? 'font-bold text-black' : 'font-medium text-neutral-700'}`}>
+                              {notif.title}
+                            </p>
+                            <p className="text-neutral-500 text-xs line-clamp-2 mt-0.5">{notif.message}</p>
+                            <p className="text-neutral-400 text-[10px] mt-1.5">{new Date(notif.createdAt).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
+                          </div>
+                        {!notif.isRead && (
                           <div className="w-2 h-2 rounded-full bg-[var(--color-pop-red)] mt-1.5 shrink-0"></div>
                         )}
                       </Link>
-                    ))}
+                      );
+                    })}
                     {displayNotifications.length === 0 && (
                       <div className="p-8 text-center text-neutral-500 text-sm">
                         ไม่มีการแจ้งเตือน

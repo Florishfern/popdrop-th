@@ -44,81 +44,81 @@ model VerificationToken {
 }
 
 model OtpCode {
-  id         String   @id @default(cuid())
-  userId     String
-  code       String
-  type       String   // EMAIL or PHONE
-  expiresAt  DateTime
-  isUsed     Boolean  @default(false)
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  userId    String
+  code      String
+  type      String // EMAIL or PHONE
+  expiresAt DateTime
+  isUsed    Boolean  @default(false)
+  createdAt DateTime @default(now())
 
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
-
 
 // Popdrop Business Models
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  phone         String?   // phone number
+  id    String  @id @default(cuid())
+  name  String?
+  phone String? // phone number
 
   email         String?   @unique
   emailVerified DateTime?
   phoneVerified DateTime?
-  image         String?   // profile picture
-  password_hash String?   // For credential login
+  image         String? // profile picture
+  password_hash String? // For credential login
 
-  accounts      Account[]
-  sessions      Session[]
-  addresses     Address[]
-  creditCards   CreditCard[]
-  sellerInfo    SellerInfo?
-  products      Product[]
-  bids          Bid[]
-  transactionsBuy Transaction[] @relation("Buyer")
-  transactionsSell Transaction[] @relation("Seller")
-  notifications Notification[]
-  otpCodes      OtpCode[]
-  supportTickets SupportTicket[]
-  withdrawals   Withdrawal[]
-  
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  accounts         Account[]
+  sessions         Session[]
+  addresses        Address[]
+  creditCards      CreditCard[]
+  sellerInfo       SellerInfo?
+  products         Product[]
+  bids             Bid[]
+  transactionsBuy  Transaction[]   @relation("Buyer")
+  transactionsSell Transaction[]   @relation("Seller")
+  notifications    Notification[]
+  otpCodes         OtpCode[]
+  supportTickets   SupportTicket[]
+  withdrawals      Withdrawal[]
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  ProductReminder ProductReminder[]
 }
 
 model Address {
-  id           String  @id @default(cuid())
-  userId       String
-  user         User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  name         String
-  phone        String
-  street       String
-  subdistrict  String
-  district     String
-  province     String
-  postalCode   String
-  isDefault    Boolean @default(false)
-  
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name        String
+  phone       String
+  street      String
+  subdistrict String
+  district    String
+  province    String
+  postalCode  String
+  isDefault   Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model CreditCard {
-  id             String  @id @default(cuid())
-  userId         String
-  user           User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   cardholderName String
   lastFourDigits String
   expiry         String
   brand          String
-  token          String  // e.g., Stripe/Omise token
+  token          String // e.g., Stripe/Omise token
   isDefault      Boolean @default(false)
-  
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model SellerInfo {
@@ -133,32 +133,33 @@ model SellerInfo {
   bankName           String?
   bankAccountNo      String?
 
-  payouts            Payout[]
-  
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  payouts Payout[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Product {
-  id                         String  @id @default(cuid())
+  id                         String   @id @default(cuid())
   sellerId                   String
-  seller                     User    @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  seller                     User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
   title                      String
-  category                   String  @default("Art Toy")
+  category                   String   @default("Art Toy")
   description                String
   startPrice                 Float
   currentPrice               Float
   startTime                  DateTime @default(now())
   endTime                    DateTime
-  status                     String  @default("DRAFT") // DRAFT, LIVE, ENDED, SOLD
-  allowInternationalShipping Boolean @default(false)
-  
-  images                     ProductImage[]
-  bids                       Bid[]
-  transaction                Transaction?
-  
-  createdAt                  DateTime @default(now())
-  updatedAt                  DateTime @updatedAt
+  status                     String   @default("DRAFT") // DRAFT, LIVE, ENDED, SOLD
+  allowInternationalShipping Boolean  @default(false)
+
+  images      ProductImage[]
+  bids        Bid[]
+  transaction Transaction?
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  ProductReminder ProductReminder[]
 }
 
 model ProductImage {
@@ -167,36 +168,36 @@ model ProductImage {
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   imageUrl  String
   sortOrder Int     @default(0)
-  
+
   createdAt DateTime @default(now())
 }
 
 model Bid {
-  id        String   @id @default(cuid())
+  id        String  @id @default(cuid())
   productId String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   bidderId  String
-  bidder    User     @relation(fields: [bidderId], references: [id], onDelete: Cascade)
+  bidder    User    @relation(fields: [bidderId], references: [id], onDelete: Cascade)
   amount    Float
-  
+
   createdAt DateTime @default(now())
 }
 
 model Transaction {
-  id        String   @id @default(cuid())
-  productId String   @unique
-  product   Product  @relation(fields: [productId], references: [id])
-  buyerId   String
-  buyer     User     @relation("Buyer", fields: [buyerId], references: [id])
-  sellerId  String
-  seller    User     @relation("Seller", fields: [sellerId], references: [id])
-  amount    Float
-  status    String   @default("PENDING") // PENDING, PAID, SHIPPED, DELIVERED
-  carrier   String?
+  id             String  @id @default(cuid())
+  productId      String  @unique
+  product        Product @relation(fields: [productId], references: [id])
+  buyerId        String
+  buyer          User    @relation("Buyer", fields: [buyerId], references: [id])
+  sellerId       String
+  seller         User    @relation("Seller", fields: [sellerId], references: [id])
+  amount         Float
+  status         String  @default("PENDING") // PENDING, PAID, SHIPPED, DELIVERED
+  carrier        String?
   trackingNumber String?
-  
-  payouts   Payout[]
-  
+
+  payouts Payout[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -209,44 +210,59 @@ model Payout {
   transaction   Transaction @relation(fields: [transactionId], references: [id])
   amount        Float
   status        String      @default("PENDING") // PENDING, TRANSFERRED
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Withdrawal {
-  id        String   @id @default(cuid())
-  sellerId  String
-  seller    User     @relation(fields: [sellerId], references: [id])
-  amount    Float
-  status    String   @default("PENDING") // PENDING, COMPLETED, REJECTED
-  
+  id       String @id @default(cuid())
+  sellerId String
+  seller   User   @relation(fields: [sellerId], references: [id])
+  amount   Float
+  status   String @default("PENDING") // PENDING, COMPLETED, REJECTED
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Notification {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String
-  message   String
-  type      String   // LIVE, BID, WON, INFO
-  isRead    Boolean  @default(false)
-  
+  id       String  @id @default(cuid())
+  userId   String
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title    String
+  message  String
+  type     String // LIVE, BID, WON, INFO, SUCCESS, OUTBID, SOLD
+  link     String? // Optional URL to navigate to when clicked
+  imageUrl String? // Optional thumbnail image
+  isRead   Boolean @default(false)
+
   createdAt DateTime @default(now())
 }
 
+model ProductReminder {
+  id        String  @id @default(cuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  isSent    Boolean @default(false) // Whether the reminder has been sent
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+}
+
 model SupportTicket {
-  id            String   @id @default(cuid())
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   topic         String
   description   String
   attachmentUrl String?
-  status        String   @default("OPEN")
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  status        String  @default("OPEN")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

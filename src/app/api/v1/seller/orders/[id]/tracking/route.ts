@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { createNotification } from "@/lib/notificationService";
 
 export async function PUT(
   request: NextRequest,
@@ -30,6 +31,9 @@ export async function PUT(
         id,
         sellerId: session.user.id,
       },
+      include: {
+        product: true
+      }
     });
 
     if (!transaction) {
@@ -40,13 +44,22 @@ export async function PUT(
     }
 
     // Update the transaction
-    const updatedTransaction = await prisma.transaction.update({
+    await prisma.transaction.update({
       where: { id },
       data: {
         carrier,
         trackingNumber,
         status: "SHIPPED",
       },
+    });
+
+    // Notify Buyer
+    await createNotification({
+      userId: transaction.buyerId,
+      title: "สินค้ากำลังจัดส่ง",
+      message: `สินค้า "${transaction.product.title}" ของคุณกำลังถูกจัดส่งโดย ${carrier} หมายเลขพัสดุ: ${trackingNumber}`,
+      type: "INFO",
+      link: "/profile",
     });
 
     return NextResponse.json({
