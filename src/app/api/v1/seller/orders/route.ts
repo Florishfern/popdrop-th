@@ -37,7 +37,7 @@ export async function GET() {
       // Map status
       let mappedStatus = "Draft";
       if (p.transaction) {
-        if (p.transaction.status === "PENDING") {
+        if (p.transaction.status === "PENDING" || p.transaction.status === "PAID") {
           mappedStatus = "Pending";
         } else if (p.transaction.status === "SHIPPED") {
           mappedStatus = "In Progress";

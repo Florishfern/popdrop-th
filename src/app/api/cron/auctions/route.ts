@@ -68,8 +68,28 @@ export async function GET() {
               buyerId: winningBid.bidderId,
               sellerId: product.sellerId,
               amount: winningBid.amount,
-              status: "PENDING", // Waiting for payment
+              status: "PAID", // Auto-charged the linked credit card
             }
+          });
+
+          // 3. Notify Buyer: Payment successful
+          await createNotification({
+            userId: winningBid.bidderId,
+            title: "ชำระเงินสำเร็จ",
+            message: `ระบบได้ทำการตัดบัตรเครดิตของคุณสำหรับสินค้า "${product.title}" เรียบร้อยแล้ว`,
+            type: "SUCCESS",
+            link: `/profile`,
+            imageUrl: product.images[0]?.imageUrl,
+          });
+
+          // 4. Notify Seller: Payment received, prepare to ship
+          await createNotification({
+            userId: product.sellerId,
+            title: "ผู้ซื้อชำระเงินสำเร็จแล้ว",
+            message: `ผู้ซื้อได้ชำระเงินสำหรับ "${product.title}" เรียบร้อยแล้ว กรุณาเตรียมการจัดส่ง`,
+            type: "SUCCESS",
+            link: `/seller/orders`,
+            imageUrl: product.images[0]?.imageUrl,
           });
         }
       } else {
