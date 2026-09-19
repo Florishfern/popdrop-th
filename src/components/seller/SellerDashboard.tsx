@@ -463,8 +463,8 @@ export default function SellerDashboard() {
                               </button>
                             )}
 
-                            {/* Option 2: Delete Product (If Draft / hasn't started) */}
-                            {(item.status === "Draft") && (
+                            {/* Option 2: Delete Product (If hasn't started) */}
+                            {((item.startTime && new Date() < new Date(item.startTime)) || item.status === "Draft") && (
                               <button
                                 onClick={() => item.productId && handleDeleteProduct(item.productId)}
                                 className="w-full text-left px-4 py-2 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors"
