@@ -1,36 +1,71 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, Cpu, Snowflake, HardDrive, AlertTriangle, ShieldCheck, Activity, TerminalSquare, RefreshCw } from "lucide-react";
-import { simulateChaos } from "@/services/api";
 
 export default function ChaosAdmin() {
   const [logs, setLogs] = useState<string[]>([]);
   const [activeChaos, setActiveChaos] = useState<string | null>(null);
 
-  const handleToggleChaos = async (type: string) => {
-    if (activeChaos === type) {
-      // Turn off
-      setActiveChaos(null);
-      setLogs(prev => [`[${new Date().toLocaleTimeString()}] Stopped ${type} simulation`, ...prev]);
-      return;
-    }
+  // Poll for chaos status
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        const res = await fetch('/api/v1/chaos/status');
+        if (res.ok) {
+          const data = await res.json();
+          // Decide which one is active for UI (simplification: we just show one active in dial, but toggles can be multiple)
+          if (data.isDefaced) setActiveChaos('deface');
+          else if (data.isAppFrozen) setActiveChaos('freeze');
+          // For CPU and Disk, they are transient/background so we might not have a boolean flag in DB. 
+          // We can just rely on local state for them during the 60s demo.
+        }
+      } catch (err) {}
+    };
+    fetchStatus();
+    const interval = setInterval(fetchStatus, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
-    // Turn on
-    setActiveChaos(type);
-    setLogs(prev => [`[${new Date().toLocaleTimeString()}] Triggered ${type} simulation`, ...prev]);
+  const handleToggleChaos = async (type: string) => {
+    const isActivating = activeChaos !== type;
+    const action = isActivating ? "start" : "stop";
+
+    // Optimistic UI update
+    if (isActivating) {
+      setActiveChaos(type);
+      setLogs(prev => [`[${new Date().toLocaleTimeString()}] Triggered ${type} simulation...`, ...prev]);
+    } else {
+      setActiveChaos(null);
+      setLogs(prev => [`[${new Date().toLocaleTimeString()}] Stopping ${type} simulation...`, ...prev]);
+    }
     
-    // In a real scenario, this would call the API
-    /*
     try {
-      const res = await simulateChaos(type as any);
-      setLogs(prev => [`[${new Date().toLocaleTimeString()}] ${res.message}`, ...prev]);
+      const res = await fetch('/api/v1/chaos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, action })
+      });
+      const data = await res.json();
+      
+      if (res.ok) {
+        setLogs(prev => [`[${new Date().toLocaleTimeString()}] ${data.message}`, ...prev]);
+        // If it's CPU, it auto stops after 60s
+        if (type === 'cpu' && action === 'start') {
+          setTimeout(() => {
+            setActiveChaos(null);
+            setLogs(prev => [`[${new Date().toLocaleTimeString()}] High CPU simulation ended automatically.`, ...prev]);
+          }, 60000);
+        }
+      } else {
+        setLogs(prev => [`[${new Date().toLocaleTimeString()}] Error: ${data.error}`, ...prev]);
+        setActiveChaos(null); // Revert
+      }
     } catch (error) {
-      setLogs(prev => [`[${new Date().toLocaleTimeString()}] Error: ${error}`, ...prev]);
+      setLogs(prev => [`[${new Date().toLocaleTimeString()}] Error: Failed to reach API`, ...prev]);
       setActiveChaos(null);
     }
-    */
   };
 
   const scenarios = [

@@ -266,3 +266,10 @@ model SupportTicket {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model ChaosState {
+  id             String    @id @default("global")
+  isAppFrozen    Boolean   @default(false)
+  isDefaced      Boolean   @default(false)
+  updatedAt      DateTime  @updatedAt
+}
