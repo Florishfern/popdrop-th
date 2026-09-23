@@ -13,6 +13,8 @@ export const metadata: Metadata = {
   description: "Limited-edition NFT animals with distinct traits. Collect, trade, and build your digital zoo.",
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -28,6 +30,11 @@ export default async function RootLayout({
     if (chaosState?.isDefaced) isDefaced = true;
   } catch (error) {
     // Ignore DB errors during layout render
+  }
+
+  // To trigger CloudFront Origin Failover (500 Error), we must throw an error when hacked.
+  if (isDefaced) {
+    throw new Error("SYSTEM_HACKED");
   }
 
   return (
