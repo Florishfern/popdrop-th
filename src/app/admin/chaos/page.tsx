@@ -28,6 +28,22 @@ export default function ChaosAdmin() {
     return () => clearInterval(interval);
   }, []);
 
+  // Load logs from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('chaosLogs');
+    if (saved) {
+      setLogs(JSON.parse(saved));
+    }
+  }, []);
+
+  const addLog = (msg: string) => {
+    setLogs(prev => {
+      const newLogs = [msg, ...prev].slice(0, 50); // Keep last 50 logs
+      localStorage.setItem('chaosLogs', JSON.stringify(newLogs));
+      return newLogs;
+    });
+  };
+
   const handleToggleChaos = async (type: string) => {
     const isActivating = activeChaos !== type;
     const action = isActivating ? "start" : "stop";
@@ -35,10 +51,10 @@ export default function ChaosAdmin() {
     // Optimistic UI update
     if (isActivating) {
       setActiveChaos(type);
-      setLogs(prev => [`[${new Date().toLocaleTimeString()}] Triggered ${type} simulation...`, ...prev]);
+      addLog(`[${new Date().toLocaleTimeString()}] Triggered ${type} simulation...`);
     } else {
       setActiveChaos(null);
-      setLogs(prev => [`[${new Date().toLocaleTimeString()}] Stopping ${type} simulation...`, ...prev]);
+      addLog(`[${new Date().toLocaleTimeString()}] Stopping ${type} simulation...`);
     }
     
     try {
@@ -50,20 +66,20 @@ export default function ChaosAdmin() {
       const data = await res.json();
       
       if (res.ok) {
-        setLogs(prev => [`[${new Date().toLocaleTimeString()}] ${data.message}`, ...prev]);
+        addLog(`[${new Date().toLocaleTimeString()}] ${data.message}`);
         // If it's CPU, it auto stops after 60s
         if (type === 'cpu' && action === 'start') {
           setTimeout(() => {
             setActiveChaos(null);
-            setLogs(prev => [`[${new Date().toLocaleTimeString()}] High CPU simulation ended automatically.`, ...prev]);
+            addLog(`[${new Date().toLocaleTimeString()}] High CPU simulation ended automatically.`);
           }, 60000);
         }
       } else {
-        setLogs(prev => [`[${new Date().toLocaleTimeString()}] Error: ${data.error}`, ...prev]);
+        addLog(`[${new Date().toLocaleTimeString()}] Error: ${data.error}`);
         setActiveChaos(null); // Revert
       }
     } catch (error) {
-      setLogs(prev => [`[${new Date().toLocaleTimeString()}] Error: Failed to reach API`, ...prev]);
+      addLog(`[${new Date().toLocaleTimeString()}] Error: Failed to reach API`);
       setActiveChaos(null);
     }
   };
@@ -151,24 +167,27 @@ export default function ChaosAdmin() {
           </div>
 
           {/* Right Column */}
-          <div className="space-y-6">
+          <div className="space-y-6 flex flex-col h-full">
             
             {/* Target Resources (Like "Devices" in the image) */}
-            <div className="bg-white rounded-[2rem] p-6 shadow-sm">
+            <div className="bg-white rounded-[2rem] p-6 shadow-sm flex-1 flex flex-col min-h-[500px]">
               <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-3">
                   <TerminalSquare size={20} className="text-neutral-700" />
                   <h2 className="text-lg font-bold">Event Logs</h2>
                 </div>
                 <button 
-                  onClick={() => setLogs([])}
+                  onClick={() => {
+                    setLogs([]);
+                    localStorage.removeItem('chaosLogs');
+                  }}
                   className="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center hover:bg-neutral-200 transition-colors"
                 >
                   <RefreshCw size={14} className="text-neutral-500" />
                 </button>
               </div>
               
-              <div className="space-y-4 h-[240px] overflow-y-auto pr-2 custom-scrollbar">
+              <div className="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
                 {logs.length === 0 ? (
                   <div className="h-full flex items-center justify-center text-sm font-medium text-neutral-400 text-center">
                     No chaos events triggered yet.<br/>System is operating normally.
@@ -181,38 +200,6 @@ export default function ChaosAdmin() {
                     </div>
                   ))
                 )}
-              </div>
-            </div>
-
-            {/* Dial Card (Like "Split system" in the image) */}
-            <div className="bg-white rounded-[2rem] p-6 shadow-sm flex flex-col items-center">
-              <div className="w-full flex justify-between items-center mb-2">
-                <div className="flex items-center gap-2">
-                  <Activity size={18} className="text-neutral-600" />
-                  <span className="font-bold text-sm">Cluster Load</span>
-                </div>
-                <div className="bg-neutral-100 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5">
-                  <span className={`w-1.5 h-1.5 rounded-full ${activeChaos ? 'bg-orange-500 animate-pulse' : 'bg-green-500'}`}></span>
-                  {activeChaos ? 'Stressed' : 'Normal'}
-                </div>
-              </div>
-              
-              <div className="relative w-48 h-48 mt-4 flex items-center justify-center">
-                {/* SVG Dial Background */}
-                <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-                  <circle cx="50" cy="50" r="40" stroke="#f0f2f5" strokeWidth="8" fill="none" strokeDasharray="251.2" strokeDashoffset="0" />
-                  <circle cx="50" cy="50" r="40" stroke={activeChaos ? "#f97316" : "#3b82f6"} strokeWidth="8" fill="none" strokeDasharray="251.2" strokeDashoffset={activeChaos ? "50" : "200"} className="transition-all duration-1000 ease-out" />
-                </svg>
-                {/* Center Content */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                  <span className="text-4xl font-extrabold tracking-tight text-black">
-                    {activeChaos ? '88%' : '12%'}
-                  </span>
-                  <span className="text-xs font-bold text-neutral-400 mt-1 uppercase tracking-wider">Avg CPU</span>
-                  <div className="mt-2 text-[10px] font-bold px-2 py-0.5 rounded border border-neutral-200 text-neutral-500">
-                    Auto-scaling: {activeChaos ? 'Active' : 'Standby'}
-                  </div>
-                </div>
               </div>
             </div>
 
