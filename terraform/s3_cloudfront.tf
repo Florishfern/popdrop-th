@@ -67,11 +67,50 @@ resource "aws_cloudfront_distribution" "cdn" {
     origin_access_control_id = aws_cloudfront_origin_access_control.default.id
   }
 
-  # Default Cache Behavior (routes to ALB)
-  default_cache_behavior {
+  # Origin Group for High Availability / Failover
+  origin_group {
+    origin_id = "PopdropOriginGroup"
+
+    failover_criteria {
+      status_codes = [500, 502, 503, 504]
+    }
+
+    member {
+      origin_id = "ALBOrigin"
+    }
+
+    member {
+      origin_id = "S3Origin"
+    }
+  }
+
+  # Dynamic API Routes (routes to ALB directly, allows POST/PUT)
+  ordered_cache_behavior {
+    path_pattern     = "/api/*"
     allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
     cached_methods   = ["GET", "HEAD"]
     target_origin_id = "ALBOrigin"
+
+    forwarded_values {
+      query_string = true
+      headers      = ["Host", "Authorization"]
+
+      cookies {
+        forward = "all"
+      }
+    }
+
+    min_ttl                = 0
+    default_ttl            = 0
+    max_ttl                = 0
+    viewer_protocol_policy = "redirect-to-https"
+  }
+
+  # Default Cache Behavior (routes to Origin Group, MUST only be GET/HEAD/OPTIONS for failover)
+  default_cache_behavior {
+    allowed_methods  = ["GET", "HEAD", "OPTIONS"]
+    cached_methods   = ["GET", "HEAD"]
+    target_origin_id = "PopdropOriginGroup"
 
     forwarded_values {
       query_string = true
@@ -131,7 +170,7 @@ resource "aws_s3_bucket_policy" "allow_cloudfront_oac" {
     Version = "2012-10-17"
     Statement = [
       {
-        Effect    = "Allow"
+        Effect = "Allow"
         Principal = {
           Service = "cloudfront.amazonaws.com"
         }

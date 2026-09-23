@@ -28,6 +28,27 @@ resource "aws_launch_template" "ecs_lt" {
   user_data = base64encode(<<-EOF
               #!/bin/bash
               echo ECS_CLUSTER=${aws_ecs_cluster.main.name} >> /etc/ecs/ecs.config
+              
+              # Install CloudWatch Agent
+              yum install -y amazon-cloudwatch-agent
+              
+              # Create basic config to monitor disk space
+              cat << 'CWCONF' > /opt/aws/amazon-cloudwatch-agent/bin/config.json
+              {
+                "metrics": {
+                  "metrics_collected": {
+                    "disk": {
+                      "measurement": ["used_percent"],
+                      "metrics_collection_interval": 60,
+                      "resources": ["/"]
+                    }
+                  }
+                }
+              }
+              CWCONF
+              
+              # Start the agent
+              /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/bin/config.json -s
               EOF
   )
 
@@ -46,6 +67,10 @@ resource "aws_autoscaling_group" "ecs_asg" {
   max_size            = 3
   desired_capacity    = 1
 
+  target_group_arns         = [aws_lb_target_group.app_tg.arn]
+  health_check_type         = "ELB"
+  health_check_grace_period = 300
+
   launch_template {
     id      = aws_launch_template.ecs_lt.id
     version = "$Latest"
@@ -54,6 +79,12 @@ resource "aws_autoscaling_group" "ecs_asg" {
   tag {
     key                 = "AmazonECSManaged"
     value               = true
+    propagate_at_launch = true
+  }
+
+  tag {
+    key                 = "Name"
+    value               = "popdrop-ecs-instance"
     propagate_at_launch = true
   }
 }
@@ -163,4 +194,92 @@ resource "aws_ecs_service" "app_service" {
 resource "aws_cloudwatch_log_group" "ecs_log_group" {
   name              = "/ecs/popdrop-app"
   retention_in_days = 7
+}
+
+# ------------------------------------------------------------------
+# Auto-Healing: ECS Service CPU Auto Scaling (App Freeze / CPU Spike)
+# ------------------------------------------------------------------
+
+resource "aws_appautoscaling_target" "ecs_target" {
+  max_capacity       = 3
+  min_capacity       = 1
+  resource_id        = "service/${aws_ecs_cluster.main.name}/${aws_ecs_service.app_service.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+resource "aws_appautoscaling_policy" "ecs_policy_cpu" {
+  name               = "cpu-auto-scaling"
+  policy_type        = "TargetTrackingScaling"
+  resource_id        = aws_appautoscaling_target.ecs_target.resource_id
+  scalable_dimension = aws_appautoscaling_target.ecs_target.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.ecs_target.service_namespace
+
+  target_tracking_scaling_policy_configuration {
+    target_value       = 70.0
+    scale_in_cooldown  = 60
+    scale_out_cooldown = 30
+
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+  }
+}
+
+# ------------------------------------------------------------------
+# SRE Alerts: High CPU & App Freeze (EventBridge to SNS)
+# ------------------------------------------------------------------
+
+resource "aws_cloudwatch_event_rule" "ecs_scaling_rule" {
+  name        = "popdrop-ecs-scaling-alert"
+  description = "Trigger SNS when ECS Auto Scaling occurs (High CPU)"
+  event_pattern = jsonencode({
+    source      = ["aws.application-autoscaling"]
+    detail-type = ["Application Auto Scaling Scaling Activity State Change"]
+    detail = {
+      resourceId = [aws_appautoscaling_target.ecs_target.resource_id]
+    }
+  })
+}
+
+resource "aws_cloudwatch_event_target" "sns_scaling_target" {
+  rule      = aws_cloudwatch_event_rule.ecs_scaling_rule.name
+  target_id = "SendToSNS"
+  arn       = data.aws_sns_topic.sre_alerts.arn
+
+  input_transformer {
+    input_paths = {
+      cause  = "$.detail.cause"
+      status = "$.detail.statusCode"
+    }
+    input_template = "\"🚨 ALERT (High CPU): ECS Auto Scaling activity detected. Status: <status>. Cause: <cause>\""
+  }
+}
+
+resource "aws_cloudwatch_event_rule" "app_freeze_rule" {
+  name        = "popdrop-app-freeze-alert"
+  description = "Trigger SNS when ECS Task fails ELB Health Check (App Freeze)"
+  event_pattern = jsonencode({
+    source      = ["aws.ecs"]
+    detail-type = ["ECS Task State Change"]
+    detail = {
+      clusterArn    = [aws_ecs_cluster.main.arn]
+      lastStatus    = ["STOPPED"]
+      stoppedReason = [{ prefix = "Task failed ELB health checks" }]
+    }
+  })
+}
+
+resource "aws_cloudwatch_event_target" "sns_app_freeze_target" {
+  rule      = aws_cloudwatch_event_rule.app_freeze_rule.name
+  target_id = "SendToSNS"
+  arn       = data.aws_sns_topic.sre_alerts.arn
+
+  input_transformer {
+    input_paths = {
+      task   = "$.detail.taskArn"
+      reason = "$.detail.stoppedReason"
+    }
+    input_template = "\"🚨 ALERT (App Freeze): A container stopped responding and failed the health check. ECS is automatically replacing it. Reason: <reason>\""
+  }
 }
