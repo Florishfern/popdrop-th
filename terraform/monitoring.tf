@@ -202,7 +202,7 @@ resource "aws_cloudwatch_metric_alarm" "disk_full_alarm" {
   statistic           = "Average"
   threshold           = "90"
   alarm_description   = "Triggers when EC2 disk usage is 90% or above"
-  alarm_actions       = [data.aws_sns_topic.sre_alerts.arn]
+  alarm_actions       = [aws_sns_topic.system_alerts.arn]
 
   # Monitor all instances with this image/path
   dimensions = {
@@ -324,7 +324,7 @@ resource "aws_cloudwatch_event_rule" "ssm_remediation_alert" {
 resource "aws_cloudwatch_event_target" "sns_ssm_alert" {
   rule      = aws_cloudwatch_event_rule.ssm_remediation_alert.name
   target_id = "SendToSNS"
-  arn       = data.aws_sns_topic.sre_alerts.arn
+  arn       = aws_sns_topic.system_alerts.arn
 
   input_transformer {
     input_paths = {
@@ -339,7 +339,7 @@ resource "aws_cloudwatch_event_target" "sns_ssm_alert" {
 resource "aws_cloudwatch_event_target" "sns_defaced_alert" {
   rule      = aws_cloudwatch_event_rule.defaced_rule.name
   target_id = "SendToSNS"
-  arn       = data.aws_sns_topic.sre_alerts.arn
+  arn       = aws_sns_topic.system_alerts.arn
 
   input_transformer {
     input_paths = {

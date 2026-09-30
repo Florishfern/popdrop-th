@@ -171,6 +171,13 @@ resource "aws_iam_policy" "ecs_task_s3_policy" {
           "s3:DeleteObject"
         ]
         Resource = "${aws_s3_bucket.assets_bucket.arn}/*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "sns:Publish"
+        ]
+        Resource = "*"
       }
     ]
   })

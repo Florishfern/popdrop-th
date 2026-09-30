@@ -245,7 +245,7 @@ resource "aws_cloudwatch_event_rule" "ecs_scaling_rule" {
 resource "aws_cloudwatch_event_target" "sns_scaling_target" {
   rule      = aws_cloudwatch_event_rule.ecs_scaling_rule.name
   target_id = "SendToSNS"
-  arn       = data.aws_sns_topic.sre_alerts.arn
+  arn       = aws_sns_topic.system_alerts.arn
 
   input_transformer {
     input_paths = {
@@ -273,7 +273,7 @@ resource "aws_cloudwatch_event_rule" "app_freeze_rule" {
 resource "aws_cloudwatch_event_target" "sns_app_freeze_target" {
   rule      = aws_cloudwatch_event_rule.app_freeze_rule.name
   target_id = "SendToSNS"
-  arn       = data.aws_sns_topic.sre_alerts.arn
+  arn       = aws_sns_topic.system_alerts.arn
 
   input_transformer {
     input_paths = {
