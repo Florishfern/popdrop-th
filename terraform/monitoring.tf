@@ -44,13 +44,13 @@ resource "aws_cloudwatch_dashboard" "main" {
 resource "aws_budgets_budget" "cost_budget" {
   name         = "popdrop-monthly-budget"
   budget_type  = "COST"
-  limit_amount = "5.0" # Alert at $5
+  limit_amount = "1.0" # Alert at $1
   limit_unit   = "USD"
   time_unit    = "MONTHLY"
 
   notification {
     comparison_operator        = "GREATER_THAN"
-    threshold                  = 80
+    threshold                  = 100 # Alert as soon as actual cost exceeds $1.00
     threshold_type             = "PERCENTAGE"
     notification_type          = "ACTUAL"
     subscriber_email_addresses = var.sns_alert_emails
