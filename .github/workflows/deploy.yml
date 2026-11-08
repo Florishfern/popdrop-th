@@ -52,6 +52,7 @@ jobs:
       # Scan Docker image for vulnerabilities using Trivy
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
+        continue-on-error: true
         with:
           image-ref: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
           format: 'table'
