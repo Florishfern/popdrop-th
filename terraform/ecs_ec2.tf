@@ -7,7 +7,7 @@ resource "aws_ecs_cluster" "main" {
 
   setting {
     name  = "containerInsights"
-    value = "enabled"
+    value = "disabled"
   }
 }
 
@@ -68,7 +68,7 @@ resource "aws_autoscaling_group" "ecs_asg" {
   desired_capacity    = 1
 
   target_group_arns         = [aws_lb_target_group.app_tg.arn]
-  health_check_type         = "ELB"
+  health_check_type         = "EC2"
   health_check_grace_period = 300
 
   launch_template {
@@ -163,6 +163,10 @@ resource "aws_ecs_task_definition" "app" {
         {
           name  = "AWS_REGION"
           value = var.aws_region
+        },
+        {
+          name  = "TRIGGER_CANARY_URL"
+          value = aws_lambda_function_url.trigger_canary_url.function_url
         }
       ]
     }

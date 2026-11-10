@@ -67,7 +67,23 @@ export async function POST(req: Request) {
         where: { id: "global" },
         data: { isDefaced: action === "start" }
       });
-      return NextResponse.json({ message: action === "start" ? "Website Defacement Activated" : "Website Defacement Deactivated" });
+
+      // On-Demand Chaos: Release the Guard Bot only when triggered by button
+      if (action === "start" && process.env.TRIGGER_CANARY_URL) {
+        try {
+          fetch(process.env.TRIGGER_CANARY_URL, { method: "POST" }).catch((err) => {
+            console.warn("Trigger canary call failed:", err.message);
+          });
+        } catch (err: any) {
+          console.warn("Trigger canary exception:", err.message);
+        }
+      }
+
+      return NextResponse.json({ 
+        message: action === "start" 
+          ? "Website Defacement Activated (Guard Bot Dispatched On-Demand)" 
+          : "Website Defacement Deactivated" 
+      });
     }
 
     return NextResponse.json({ error: "Unknown chaos type" }, { status: 400 });

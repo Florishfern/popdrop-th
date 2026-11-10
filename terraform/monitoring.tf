@@ -80,6 +80,26 @@ resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+resource "aws_iam_role_policy" "lambda_synthetics_policy" {
+  name = "popdrop-lambda-synthetics-policy"
+  role = aws_iam_role.lambda_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "synthetics:StartCanary",
+          "synthetics:StopCanary",
+          "synthetics:DescribeCanaries"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 data "archive_file" "lambda_zip" {
   type        = "zip"
   source_dir  = "lambda"
@@ -97,7 +117,33 @@ resource "aws_lambda_function" "self_healing" {
   environment {
     variables = {
       HEAL_API_URL = "http://${aws_lb.app_alb.dns_name}/api/v1/chaos"
+      CANARY_NAME  = "popdrop-guard-bot"
     }
+  }
+}
+
+resource "aws_lambda_function" "trigger_canary" {
+  filename         = data.archive_file.lambda_zip.output_path
+  function_name    = "popdrop-trigger-canary"
+  role             = aws_iam_role.lambda_role.arn
+  handler          = "trigger.handler"
+  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
+  runtime          = "nodejs20.x"
+
+  environment {
+    variables = {
+      CANARY_NAME = "popdrop-guard-bot"
+    }
+  }
+}
+
+resource "aws_lambda_function_url" "trigger_canary_url" {
+  function_name      = aws_lambda_function.trigger_canary.function_name
+  authorization_type = "NONE"
+
+  cors {
+    allow_origins = ["*"]
+    allow_methods = ["POST", "GET"]
   }
 }
 
@@ -146,10 +192,11 @@ resource "aws_synthetics_canary" "defacement_guard" {
   handler              = "index.handler"
   zip_file             = data.archive_file.canary_zip.output_path
   runtime_version      = "syn-nodejs-puppeteer-9.1"
-  start_canary         = true
+  start_canary         = false
 
   schedule {
-    expression = "rate(1 minute)"
+    expression          = "rate(1 minute)"
+    duration_in_seconds = 120
   }
 
   run_config {
