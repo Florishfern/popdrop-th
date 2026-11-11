@@ -63,9 +63,9 @@ resource "aws_launch_template" "ecs_lt" {
 resource "aws_autoscaling_group" "ecs_asg" {
   name                = "popdrop-ecs-asg"
   vpc_zone_identifier = aws_subnet.public[*].id
-  min_size            = 1
-  max_size            = 3
-  desired_capacity    = 1
+  min_size            = 2
+  max_size            = 4
+  desired_capacity    = 2
 
   target_group_arns         = [aws_lb_target_group.app_tg.arn]
   health_check_type         = "EC2"
@@ -185,9 +185,9 @@ resource "aws_ecs_service" "app_service" {
   name                               = "popdrop-service"
   cluster                            = aws_ecs_cluster.main.id
   task_definition                    = aws_ecs_task_definition.app.arn
-  desired_count                      = 1
-  deployment_minimum_healthy_percent = 0
-  deployment_maximum_percent         = 100
+  desired_count                      = 2
+  deployment_minimum_healthy_percent = 50
+  deployment_maximum_percent         = 200
 
   capacity_provider_strategy {
     capacity_provider = aws_ecs_capacity_provider.ecs_cp.name
@@ -215,8 +215,8 @@ resource "aws_cloudwatch_log_group" "ecs_log_group" {
 # ------------------------------------------------------------------
 
 resource "aws_appautoscaling_target" "ecs_target" {
-  max_capacity       = 3
-  min_capacity       = 1
+  max_capacity       = 4
+  min_capacity       = 2
   resource_id        = "service/${aws_ecs_cluster.main.name}/${aws_ecs_service.app_service.name}"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"

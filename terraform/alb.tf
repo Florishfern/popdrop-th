@@ -11,11 +11,12 @@ resource "aws_lb" "app_alb" {
 }
 
 resource "aws_lb_target_group" "app_tg" {
-  name_prefix = "pd-tg-" # Changed from 'name = "popdrop-tg"' to support create_before_destroy recreation
-  port        = 3000
-  protocol    = "HTTP"
-  vpc_id      = aws_vpc.main.id
-  target_type = "instance"
+  name_prefix          = "pd-tg-" # Changed from 'name = "popdrop-tg"' to support create_before_destroy recreation
+  port                 = 3000
+  protocol             = "HTTP"
+  vpc_id               = aws_vpc.main.id
+  target_type          = "instance"
+  deregistration_delay = 30
 
   health_check {
     path                = "/api/health"

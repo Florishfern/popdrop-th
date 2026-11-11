@@ -44,7 +44,7 @@ resource "aws_cloudwatch_dashboard" "main" {
 resource "aws_budgets_budget" "cost_budget" {
   name         = "popdrop-monthly-budget"
   budget_type  = "COST"
-  limit_amount = "1.0" # Alert at $1
+  limit_amount = "15.0" # Alert at $15 (safely accommodates 2nd EC2 instance at ~$7.50/mo covered by $180 credit)
   limit_unit   = "USD"
   time_unit    = "MONTHLY"
 
