@@ -46,10 +46,18 @@ export async function POST(req: Request) {
     // Mock sending
     console.log(`[MOCK MODE] OTP sent to ${destination}: ${code}`);
 
-    // In dev mode or without real creds, return the code for testing
-    // (In real prod with real SMS/Email, we wouldn't return this to client)
+    // If phone number was passed and user doesn't have it yet, update it
+    if (type === "PHONE" && destination) {
+      await prisma.user.update({
+        where: { id: session.user.id },
+        data: { phone: destination }
+      });
+    }
+
+    // Return the OTP code for testing / dev
     return NextResponse.json({ 
-      message: "OTP sent successfully"
+      message: "OTP sent successfully",
+      devCode: code
     });
   } catch (error) {
     console.error("Error generating OTP:", error);

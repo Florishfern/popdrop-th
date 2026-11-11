@@ -363,11 +363,14 @@ async function main() {
   await prisma.product.deleteMany({});
   await prisma.user.deleteMany({});
 
-  // Insert 50 users
-  for (const user of usersData) {
+  // Insert 50 users with phone numbers
+  for (let i = 0; i < usersData.length; i++) {
+    const user = usersData[i];
+    const num = (i + 1).toString().padStart(2, '0');
     await prisma.user.create({
       data: {
         ...user,
+        phone: `081-234-56${num}`,
         emailVerified: new Date(user.emailVerified)
       }
     });

@@ -114,8 +114,17 @@ export default function ProfileClient() {
 
   const handleSendOtp = async (type: "EMAIL" | "PHONE", destination: string) => {
     try {
+      let target = destination;
+      if (type === "PHONE" && !target) {
+        const input = window.prompt("กรุณากรอกเบอร์โทรศัพท์ของคุณ (เช่น 0812345678):");
+        if (!input) return;
+        target = input.trim();
+        if (profile) {
+          setProfile({ ...profile, phone: target });
+        }
+      }
       setOtpType(type);
-      const res = await sendOtp(type, destination);
+      const res = await sendOtp(type, target);
       if (res.devCode) {
         showToast(`[DEV] OTP Code is: ${res.devCode}`);
       } else {
