@@ -308,7 +308,7 @@ export default function BiddingClient() {
                         </span>
                       </div>
                       <Link
-                        href="/profile"
+                        href="/transactions"
                         className="inline-flex items-center gap-1 text-black font-bold hover:underline"
                       >
                         <CheckCircle2 size={14} className="text-emerald-600" />

@@ -2,9 +2,15 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { processEndedAuctions } from "@/lib/auctionService";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   try {
+    // Process any auctions that have ended so new won transactions are generated
+    await processEndedAuctions();
+
     const session = await getServerSession(authOptions);
     if (!session || !session.user) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });

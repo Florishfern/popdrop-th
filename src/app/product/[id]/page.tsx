@@ -3,10 +3,11 @@
 import { useEffect, useState, use } from "react";
 import Image from "next/image";
 
-import { ArrowLeft, Sparkles, CheckCircle, Bell, Check } from "lucide-react";
+import { ArrowLeft, Sparkles, CheckCircle, Bell, Check, Trophy, CheckCircle2 } from "lucide-react";
 import Tilt from "react-parallax-tilt";
 import Spline from "@splinetool/react-spline";
 import { motion } from "framer-motion";
+import Link from "next/link";
 
 import Navbar from "@/components/layout/Navbar";
 import { Product, BidHistory } from "@/types";
@@ -38,6 +39,25 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
     currentUserId &&
     (product?.seller?.id === currentUserId || product?.sellerId === currentUserId)
   );
+
+  const currentHighestBidderId =
+    bidHistory.length > 0 ? bidHistory[0].bidderId : product?.highestBidderId;
+  const isHighestBidder = !!(
+    currentUserId &&
+    currentHighestBidderId &&
+    currentHighestBidderId === currentUserId
+  );
+
+  const formatCountdown = (targetDate: Date) => {
+    const diff = targetDate.getTime() - currentTime.getTime();
+    if (diff <= 0) return "00:00:00";
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+    return `${hours.toString().padStart(2, "0")}:${minutes
+      .toString()
+      .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+  };
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -93,6 +113,12 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
       return;
     }
 
+    if (isHighestBidder) {
+      setToastMessage("คุณเป็นผู้เสนอราคาสูงสุดอยู่ในปัจจุบันแล้ว ไม่สามารถบิดซ้ำได้ ต้องรอให้ผู้อื่นเสนอราคาก่อน");
+      setTimeout(() => setToastMessage(null), 4000);
+      return;
+    }
+
     if (!product) return;
     setIsBidding(true);
 
@@ -106,7 +132,12 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
 
     try {
       const response = await placeBid(payload);
-      setToastMessage(response.message);
+      setToastMessage(response.message || "เสนอราคาสำเร็จ!");
+      // Immediately refresh bid history & product
+      fetchBidHistory(productId).then((data) => setBidHistory(data));
+      fetchProductById(productId).then((data) => {
+        if (data) setProduct(data);
+      });
 
       // Auto hide toast
       setTimeout(() => setToastMessage(null), 3000);
@@ -246,7 +277,9 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                 {isLive ? (
                   <div className="flex flex-col items-end gap-1">
                     <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Ends In</span>
-                    <div className="text-xl font-bold text-[var(--color-pop-red)] font-mono">23:59:59</div>
+                    <div className="text-xl font-bold text-[var(--color-pop-red)] font-mono">
+                      {formatCountdown(new Date(product.endTime))}
+                    </div>
                   </div>
                 ) : (!hasStarted && isTimeLive) ? (
                   <div className="flex flex-col items-end gap-1">
@@ -263,11 +296,24 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                 >
                   คุณเป็นผู้ขายสินค้านี้ (ไม่สามารถประมูลหรือกดแจ้งเตือนตนเองได้)
                 </button>
+              ) : isHighestBidder && isLive ? (
+                <div className="flex flex-col gap-2 w-full">
+                  <button
+                    disabled
+                    className="w-full bg-emerald-50 border-2 border-emerald-500 text-emerald-700 py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 cursor-not-allowed select-none shadow-xs"
+                  >
+                    <CheckCircle size={18} className="text-emerald-600" />
+                    คุณเป็นผู้เสนอราคาสูงสุดแล้ว (฿{product.currentBid.toLocaleString()})
+                  </button>
+                  <p className="text-center text-xs text-neutral-500 font-medium">
+                    คุณเป็นผู้นำการประมูลอยู่ในขณะนี้ ต้องรอให้มีผู้อื่นเสนอราคาต่อ จึงจะบิดเพิ่มได้
+                  </p>
+                </div>
               ) : isLive ? (
                 <button
                   onClick={handleBid}
                   disabled={isBidding}
-                  className="w-full bg-black hover:bg-neutral-800 text-white py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                  className="w-full bg-black hover:bg-neutral-800 text-white py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
                 >
                   <Sparkles size={18} />
                   {isBidding ? "Processing..." : `Bid Now (฿${(product.currentBid + product.minBidStep).toLocaleString()})`}
@@ -316,9 +362,26 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                   {isReminded ? <Check size={18} /> : <Bell size={18} />}
                   {isReminded ? "Notified (อยู่ในรายการ Upcoming แล้ว)" : "Notify Me (แจ้งเตือนเมื่อเริ่มประมูล)"}
                 </button>
+              ) : isHighestBidder ? (
+                <div className="w-full bg-emerald-50 border border-emerald-200 text-emerald-800 p-5 rounded-2xl font-bold text-sm flex flex-col items-center justify-center gap-3 shadow-xs">
+                  <div className="flex items-center gap-2 text-emerald-700 font-extrabold text-base">
+                    <Trophy size={20} className="text-amber-500 shrink-0" />
+                    <span>ยินดีด้วย! คุณชนะการประมูลสินค้านี้ (฿{product.currentBid.toLocaleString()})</span>
+                  </div>
+                  <p className="text-xs text-neutral-600 font-normal text-center">
+                    ไม่มีผู้เสนอราคาต่อจนหมดเวลา สินค้าชิ้นนี้เป็นของคุณแล้ว
+                  </p>
+                  <Link
+                    href="/transactions"
+                    className="inline-flex items-center gap-1.5 px-6 py-2.5 bg-black hover:bg-neutral-800 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
+                  >
+                    <CheckCircle2 size={16} className="text-emerald-400" />
+                    ดูคำสั่งซื้อ / ชำระเงิน
+                  </Link>
+                </div>
               ) : (
                 <button disabled className="w-full bg-neutral-200 text-neutral-500 py-4 rounded-xl font-bold text-sm cursor-not-allowed">
-                  Auction Ended
+                  {product.status === "SOLD" ? "Sold (สิ้นสุดการประมูลแล้ว)" : "Auction Ended (หมดเวลาการประมูล)"}
                 </button>
               )}
             </div>
@@ -344,7 +407,16 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                       {bidHistory.length > 0 ? (
                         bidHistory.map((bid) => (
                           <tr key={bid.id} className="hover:bg-neutral-50 transition-colors">
-                            <td className="px-6 py-3 font-medium text-black">{bid.username}</td>
+                            <td className="px-6 py-3 font-medium text-black">
+                              <div className="flex items-center gap-1.5">
+                                <span>{bid.username}</span>
+                                {bid.bidderId === currentUserId && (
+                                  <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-full font-bold">
+                                    คุณ
+                                  </span>
+                                )}
+                              </div>
+                            </td>
                             <td className="px-6 py-3 font-bold text-[var(--color-pop-red)]">฿{bid.bidAmount.toLocaleString()}</td>
                             <td className="px-6 py-3 text-neutral-400 text-xs text-right">
                               {new Date(bid.timestamp).toLocaleTimeString()}

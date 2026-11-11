@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import PaymentSettings from "./PaymentSettings";
 import Helps from "./Helps";
 import Transactions from "./Transactions";
@@ -37,7 +38,45 @@ import {
 } from "lucide-react";
 
 export default function ProfileClient() {
-  const [activeTab, setActiveTab] = useState("Edit Profile");
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+
+  const [activeTab, setActiveTab] = useState(() => {
+    if (tabParam) {
+      const lower = tabParam.toLowerCase();
+      if (lower === "transactions" || lower === "transaction" || lower === "orders") {
+        return "Transactions";
+      } else if (lower === "security") {
+        return "Security";
+      } else if (lower === "payments" || lower === "payment") {
+        return "Payments";
+      } else if (lower === "helps" || lower === "help") {
+        return "Helps";
+      } else if (lower === "verification") {
+        return "Verification";
+      }
+    }
+    return "Edit Profile";
+  });
+
+  useEffect(() => {
+    if (tabParam) {
+      const lower = tabParam.toLowerCase();
+      if (lower === "transactions" || lower === "transaction" || lower === "orders") {
+        setActiveTab("Transactions");
+      } else if (lower === "security") {
+        setActiveTab("Security");
+      } else if (lower === "payments" || lower === "payment") {
+        setActiveTab("Payments");
+      } else if (lower === "helps" || lower === "help") {
+        setActiveTab("Helps");
+      } else if (lower === "verification") {
+        setActiveTab("Verification");
+      } else if (lower === "edit profile" || lower === "edit" || lower === "profile") {
+        setActiveTab("Edit Profile");
+      }
+    }
+  }, [tabParam]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);

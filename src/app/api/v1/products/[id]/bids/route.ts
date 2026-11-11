@@ -23,6 +23,7 @@ export async function GET(
     const formattedBids = bids.map((b) => ({
       id: b.id,
       productId: b.productId,
+      bidderId: b.bidder.id,
       username: b.bidder.name || "User",
       bidAmount: b.amount,
       timestamp: b.createdAt.toISOString(),
@@ -109,11 +110,16 @@ export async function POST(
         throw new Error(`Bid must be at least ฿${minRequiredBid.toLocaleString()}`);
       }
 
-      // Find the previous highest bidder to notify them
+      // Find the previous highest bidder to validate and notify
       const previousHighestBid = await tx.bid.findFirst({
         where: { productId },
         orderBy: { amount: "desc" },
       });
+
+      // Prevent bidding twice in a row if current user is already the highest bidder
+      if (previousHighestBid && previousHighestBid.bidderId === session.user.id) {
+        throw new Error("คุณเป็นผู้เสนอราคาสูงสุดอยู่ในปัจจุบันแล้ว ไม่สามารถบิดซ้ำได้ ต้องรอให้ผู้อื่นเสนอราคาก่อน");
+      }
 
       // Update product current price
       await tx.product.update({

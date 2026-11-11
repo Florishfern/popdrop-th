@@ -8,6 +8,7 @@ export interface Seller {
 export interface Product {
   id: string;
   sellerId?: string;
+  highestBidderId?: string | null;
   title: string;
   category: string;
   imageUrl: string;
@@ -26,9 +27,11 @@ export interface Product {
 export interface BidHistory {
   id: string;
   productId: string;
+  bidderId?: string;
   username: string;
   bidAmount: number;
   timestamp: string;
+  avatar?: string | null;
 }
 
 export interface BidRequestPayload {

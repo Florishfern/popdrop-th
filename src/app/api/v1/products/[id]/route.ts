@@ -1,15 +1,17 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import prisma from "@/lib/prisma";
+import { processEndedAuctions } from "@/lib/auctionService";
 
 export const dynamic = 'force-dynamic';
-
-const prisma = new PrismaClient();
 
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Auto-process any auctions that have reached endTime
+    await processEndedAuctions();
+
     const resolvedParams = await params;
     const productId = resolvedParams.id;
     
@@ -25,10 +27,17 @@ export async function GET(
       return NextResponse.json({ message: "Product not found" }, { status: 404 });
     }
 
+    const highestBid = await prisma.bid.findFirst({
+      where: { productId },
+      orderBy: { amount: "desc" },
+      select: { bidderId: true, amount: true },
+    });
+
     // Map to frontend structure
     const formattedProduct = {
       id: product.id,
       sellerId: product.sellerId,
+      highestBidderId: highestBid?.bidderId || null,
       title: product.title,
       description: product.description,
       currentBid: product.currentPrice,
