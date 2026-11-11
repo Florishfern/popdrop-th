@@ -18,20 +18,30 @@ export default function ProductCard({ product, onToggleReminder }: ProductCardPr
   const pathname = usePathname();
   const [isNotified, setIsNotified] = useState<boolean>(!!product.isNotified);
   const [isToggling, setIsToggling] = useState<boolean>(false);
+  const [currentTime, setCurrentTime] = useState<Date>(() => new Date());
 
   useEffect(() => {
     setIsNotified(!!product.isNotified);
   }, [product.isNotified]);
+
+  // Real-time tick every 1 second to automatically flip UPCOMING <-> LIVE when time arrives
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const isCard =
     product.category.toLowerCase() === "card" ||
     product.category.toLowerCase() === "trading card" ||
     product.category.toLowerCase() === "pokemon" ||
     product.category.toLowerCase() === "lorcana";
-  const now = new Date();
-  const startTime = product.startTime ? new Date(product.startTime) : now;
-  const isTimeLive = product.endTime ? new Date(product.endTime) > now : true;
-  const hasStarted = now >= startTime;
+
+  const startTime = product.startTime ? new Date(product.startTime) : currentTime;
+  const endTime = product.endTime ? new Date(product.endTime) : null;
+  const isTimeLive = endTime ? endTime > currentTime : true;
+  const hasStarted = currentTime >= startTime;
   const isLive =
     (product.status === "Live Auction" || product.status === "LIVE") &&
     isTimeLive &&
@@ -72,15 +82,19 @@ export default function ProductCard({ product, onToggleReminder }: ProductCardPr
     <div className="relative w-full h-full rounded-2xl overflow-hidden bg-white shadow-lg border border-neutral-100 group flex flex-col">
       {/* Status Badge */}
       <div className="absolute top-3 right-3 z-10">
-        <span
-          className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase shadow-sm ${
-            isLive
-              ? "text-[var(--color-pop-red)] bg-red-50 animate-pulse border border-red-100"
-              : "text-white bg-neutral-800"
-          }`}
-        >
-          {isLive ? "LIVE" : !hasStarted && isTimeLive ? "Upcoming" : product.status}
-        </span>
+        {isLive ? (
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md uppercase shadow-xs bg-[#FDEEEE] text-[#E52E2E] tracking-wider border border-[#FCDADA]">
+            LIVE
+          </span>
+        ) : !hasStarted && isTimeLive ? (
+          <span className="text-[10px] font-bold px-2.5 py-1 rounded-md uppercase shadow-xs bg-[#1F1F1F] text-white tracking-wider">
+            UPCOMING
+          </span>
+        ) : (
+          <span className="text-[10px] font-bold px-2 py-1 rounded-md uppercase shadow-xs bg-neutral-200 text-neutral-600 tracking-wider">
+            {product.status === "SOLD" ? "SOLD" : "ENDED"}
+          </span>
+        )}
       </div>
 
       {/* Image Container */}
@@ -122,7 +136,7 @@ export default function ProductCard({ product, onToggleReminder }: ProductCardPr
           </div>
 
           {isLive ? (
-            <span className="bg-black text-white text-xs font-bold px-5 py-2.5 rounded-full hover:bg-neutral-800 transition-all">
+            <span className="bg-black text-white text-xs font-bold px-5 py-2.5 rounded-full hover:bg-neutral-800 transition-all shadow-xs">
               Bid Now
             </span>
           ) : !hasStarted && isTimeLive ? (
@@ -130,13 +144,13 @@ export default function ProductCard({ product, onToggleReminder }: ProductCardPr
               type="button"
               onClick={handleNotifyClick}
               disabled={isToggling}
-              className={`flex items-center gap-1.5 text-xs font-bold px-4 py-2.5 rounded-full transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 text-xs font-bold px-4 py-2.5 rounded-full transition-all cursor-pointer shadow-xs ${
                 isNotified
-                  ? "bg-black text-white border border-black hover:bg-neutral-800"
-                  : "bg-neutral-100 text-black border border-neutral-200 hover:bg-neutral-200"
+                  ? "bg-black text-white hover:bg-neutral-800"
+                  : "bg-[#F5F5F7] text-black hover:bg-neutral-200 border border-neutral-200/50"
               }`}
             >
-              {isNotified ? <Check size={14} /> : <Bell size={14} />}
+              {isNotified ? <Check size={14} /> : <Bell size={14} className="text-black" />}
               {isNotified ? "Notified" : "Notify Me"}
             </button>
           ) : (

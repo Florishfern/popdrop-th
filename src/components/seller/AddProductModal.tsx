@@ -69,8 +69,8 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, onError }:
         title,
         category,
         price: Number(price),
-        startTime,
-        endTime,
+        startTime: new Date(startTime).toISOString(),
+        endTime: new Date(endTime).toISOString(),
         description,
         imageUrl: finalImageUrl,
       };

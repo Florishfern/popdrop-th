@@ -129,10 +129,16 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
   const isCard = product.category.toLowerCase() === "card" || product.category.toLowerCase() === "trading card" || product.category.toLowerCase() === "pokemon" || product.category.toLowerCase() === "lorcana";
   const has3DModel = !!product.model3dUrl;
   
-  const now = new Date();
-  const startTime = product.startTime ? new Date(product.startTime) : now;
-  const isTimeLive = product.endTime ? new Date(product.endTime) > now : true;
-  const hasStarted = now >= startTime;
+  const [currentTime, setCurrentTime] = useState<Date>(() => new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const startTime = product.startTime ? new Date(product.startTime) : currentTime;
+  const isTimeLive = product.endTime ? new Date(product.endTime) > currentTime : true;
+  const hasStarted = currentTime >= startTime;
   const isLive = hasStarted && isTimeLive && (product.status === "Live Auction" || product.status === "LIVE");
 
   return (
@@ -183,9 +189,19 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
               <span className="bg-black text-white text-[10px] font-bold px-3 py-1 rounded-md uppercase">
                 {product.category}
               </span>
-              <span className={`text-[10px] font-bold px-3 py-1 rounded-md uppercase ${isLive ? "text-[var(--color-pop-red)] bg-red-50 animate-pulse border border-red-100" : "text-white bg-neutral-400"}`}>
-                {isLive ? "LIVE" : product.status}
-              </span>
+              {isLive ? (
+                <span className="text-[10px] font-bold px-2.5 py-1 rounded-md uppercase bg-[#FDEEEE] text-[#E52E2E] tracking-wider border border-[#FCDADA]">
+                  LIVE
+                </span>
+              ) : !hasStarted && isTimeLive ? (
+                <span className="text-[10px] font-bold px-2.5 py-1 rounded-md uppercase bg-[#1F1F1F] text-white tracking-wider">
+                  UPCOMING
+                </span>
+              ) : (
+                <span className="text-[10px] font-bold px-2.5 py-1 rounded-md uppercase bg-neutral-200 text-neutral-600 tracking-wider">
+                  {product.status === "SOLD" ? "SOLD" : "ENDED"}
+                </span>
+              )}
             </div>
 
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-sans text-black mb-6 leading-tight">{product.title}</h1>
@@ -211,7 +227,9 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-100 mb-8">
               <div className="flex items-end justify-between mb-6">
                 <div className="flex flex-col gap-1">
-                  <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">Current Highest Bid</span>
+                  <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider">
+                    {isLive ? "Current Highest Bid" : "Starting Bid"}
+                  </span>
                   <div className="text-4xl font-bold text-[var(--color-pop-red)]">฿{product.currentBid.toLocaleString()}</div>
                 </div>
                 {isLive ? (
