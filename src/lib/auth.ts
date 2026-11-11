@@ -74,5 +74,6 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/login",
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  useSecureCookies: process.env.NEXTAUTH_URL?.startsWith("https://") ?? false,
+  secret: process.env.NEXTAUTH_SECRET || "popdrop_super_secret_key_12345",
 };

@@ -167,6 +167,14 @@ resource "aws_ecs_task_definition" "app" {
         {
           name  = "TRIGGER_CANARY_URL"
           value = aws_lambda_function_url.trigger_canary_url.function_url
+        },
+        {
+          name  = "NEXTAUTH_URL"
+          value = "http://${aws_lb.app_alb.dns_name}"
+        },
+        {
+          name  = "NEXTAUTH_SECRET"
+          value = "popdrop_super_secret_key_12345"
         }
       ]
     }
