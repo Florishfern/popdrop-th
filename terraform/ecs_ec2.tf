@@ -187,7 +187,7 @@ resource "aws_ecs_service" "app_service" {
   task_definition                    = aws_ecs_task_definition.app.arn
   desired_count                      = 2
   deployment_minimum_healthy_percent = 50
-  deployment_maximum_percent         = 200
+  deployment_maximum_percent         = 100
 
   capacity_provider_strategy {
     capacity_provider = aws_ecs_capacity_provider.ecs_cp.name
