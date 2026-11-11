@@ -27,10 +27,16 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
   const [isReminded, setIsReminded] = useState(false);
   const [isTogglingRemind, setIsTogglingRemind] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState<Date>(() => new Date());
 
   const { data: session } = useSession();
   const router = useRouter();
   const pathname = usePathname();
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     fetchProductById(productId).then((data) => {
@@ -128,13 +134,6 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
 
   const isCard = product.category.toLowerCase() === "card" || product.category.toLowerCase() === "trading card" || product.category.toLowerCase() === "pokemon" || product.category.toLowerCase() === "lorcana";
   const has3DModel = !!product.model3dUrl;
-  
-  const [currentTime, setCurrentTime] = useState<Date>(() => new Date());
-
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   const startTime = product.startTime ? new Date(product.startTime) : currentTime;
   const isTimeLive = product.endTime ? new Date(product.endTime) > currentTime : true;
