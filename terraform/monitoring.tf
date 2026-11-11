@@ -80,8 +80,8 @@ resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-resource "aws_iam_role_policy" "lambda_synthetics_policy" {
-  name = "popdrop-lambda-synthetics-policy"
+resource "aws_iam_role_policy" "lambda_events_policy" {
+  name = "popdrop-lambda-events-policy"
   role = aws_iam_role.lambda_role.id
 
   policy = jsonencode({
@@ -90,9 +90,7 @@ resource "aws_iam_role_policy" "lambda_synthetics_policy" {
       {
         Effect = "Allow"
         Action = [
-          "synthetics:StartCanary",
-          "synthetics:StopCanary",
-          "synthetics:DescribeCanaries"
+          "events:PutEvents"
         ]
         Resource = "*"
       }
@@ -113,11 +111,12 @@ resource "aws_lambda_function" "self_healing" {
   handler          = "index.handler"
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
   runtime          = "nodejs20.x"
+  memory_size      = 128
+  timeout          = 30
 
   environment {
     variables = {
       HEAL_API_URL = "http://${aws_lb.app_alb.dns_name}/api/v1/chaos"
-      CANARY_NAME  = "popdrop-guard-bot"
     }
   }
 }
@@ -129,10 +128,12 @@ resource "aws_lambda_function" "trigger_canary" {
   handler          = "trigger.handler"
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
   runtime          = "nodejs20.x"
+  memory_size      = 128
+  timeout          = 30
 
   environment {
     variables = {
-      CANARY_NAME = "popdrop-guard-bot"
+      TARGET_URL = "http://${aws_lb.app_alb.dns_name}/"
     }
   }
 }
@@ -148,76 +149,16 @@ resource "aws_lambda_function_url" "trigger_canary_url" {
 }
 
 # ------------------------------------------------------------------
-# Auto-Healing: Website Defaced (Synthetics Canary + EventBridge -> Lambda)
+# Auto-Healing: Website Defaced (Canary Probe + EventBridge -> Self-Healing Lambda)
 # ------------------------------------------------------------------
-
-resource "aws_s3_bucket" "canary_bucket" {
-  bucket        = "popdrop-canary-logs-${random_id.bucket_id.hex}"
-  force_destroy = true
-}
-
-resource "aws_iam_role" "canary_role" {
-  name = "popdrop-canary-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "lambda.amazonaws.com"
-        }
-      }
-    ]
-  })
-}
-
-# Give Canary full access to CloudWatch and S3 for artifacts
-resource "aws_iam_role_policy_attachment" "canary_policy" {
-  role       = aws_iam_role.canary_role.name
-  policy_arn = "arn:aws:iam::aws:policy/CloudWatchSyntheticsFullAccess"
-}
-
-data "archive_file" "canary_zip" {
-  type        = "zip"
-  source_dir  = "canary"
-  output_path = "canary_payload.zip"
-}
-
-resource "aws_synthetics_canary" "defacement_guard" {
-  name                 = "popdrop-guard-bot"
-  artifact_s3_location = "s3://${aws_s3_bucket.canary_bucket.bucket}/"
-  execution_role_arn   = aws_iam_role.canary_role.arn
-  handler              = "index.handler"
-  zip_file             = data.archive_file.canary_zip.output_path
-  runtime_version      = "syn-nodejs-puppeteer-9.1"
-  start_canary         = false
-
-  schedule {
-    expression          = "rate(1 minute)"
-    duration_in_seconds = 120
-  }
-
-  run_config {
-    timeout_in_seconds = 60
-    environment_variables = {
-      TARGET_URL = "http://${aws_lb.app_alb.dns_name}/"
-    }
-  }
-}
 
 resource "aws_cloudwatch_event_rule" "defaced_rule" {
   name        = "popdrop-defaced-remediation"
-  description = "Trigger Lambda when Canary fails (Defaced)"
+  description = "Trigger Lambda when Canary probe fails (Defaced)"
 
   event_pattern = jsonencode({
-    source      = ["aws.synthetics"]
-    detail-type = ["Synthetics Canary TestRun Failure"]
-    detail = {
-      "canary-name"     = [aws_synthetics_canary.defacement_guard.name]
-      "test-run-status" = ["FAILED"]
-    }
+    source      = ["popdrop.canary"]
+    detail-type = ["Canary Test Run Failure"]
   })
 }
 
@@ -329,28 +270,6 @@ resource "aws_cloudwatch_event_target" "run_ssm_command" {
   })
 }
 
-resource "aws_iam_role_policy" "canary_s3_policy" {
-  name = "popdrop-canary-s3-policy"
-  role = aws_iam_role.canary_role.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:PutObject",
-          "s3:GetObject",
-          "s3:GetBucketLocation"
-        ]
-        Resource = [
-          aws_s3_bucket.canary_bucket.arn,
-          "${aws_s3_bucket.canary_bucket.arn}/*"
-        ]
-      }
-    ]
-  })
-}
 
 # ------------------------------------------------------------------
 # SRE Alerts: Disk Full SSM Remediation & Website Defacement (EventBridge to SNS)

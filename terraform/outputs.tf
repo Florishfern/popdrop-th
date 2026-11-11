@@ -19,8 +19,8 @@ output "rds_endpoint" {
 }
 
 output "cloudfront_domain_name" {
-  description = "The domain name of the CloudFront distribution"
-  value       = aws_cloudfront_distribution.cdn.domain_name
+  description = "The domain name of the CloudFront distribution (ALB DNS fallback while verification pending)"
+  value       = aws_lb.app_alb.dns_name
 }
 
 output "sqs_queue_url" {
