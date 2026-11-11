@@ -148,6 +148,14 @@ resource "aws_lambda_function_url" "trigger_canary_url" {
   }
 }
 
+resource "aws_lambda_permission" "allow_function_url" {
+  statement_id           = "FunctionURLAllowPublicAccess"
+  action                 = "lambda:InvokeFunctionUrl"
+  function_name          = aws_lambda_function.trigger_canary.function_name
+  principal              = "*"
+  function_url_auth_type = "NONE"
+}
+
 # ------------------------------------------------------------------
 # Auto-Healing: Website Defaced (Canary Probe + EventBridge -> Self-Healing Lambda)
 # ------------------------------------------------------------------
