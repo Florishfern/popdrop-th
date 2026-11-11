@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
-import { createNotification } from "@/lib/notificationService";
+import { processEndedAuctions } from "@/lib/auctionService";
 
 export const dynamic = "force-dynamic";
 
@@ -62,64 +62,8 @@ export async function GET() {
     const userId = session.user.id;
     const now = new Date();
 
-    // Auto-finalize any LIVE auctions whose endTime has already passed
-    try {
-      const endedAuctions = await prisma.product.findMany({
-        where: {
-          status: "LIVE",
-          endTime: { lte: now },
-        },
-        include: {
-          images: { take: 1 },
-        },
-      });
-
-      for (const product of endedAuctions) {
-        const winningBid = await prisma.bid.findFirst({
-          where: { productId: product.id },
-          orderBy: { amount: "desc" },
-        });
-
-        if (winningBid) {
-          await prisma.product.update({
-            where: { id: product.id },
-            data: { status: "SOLD" },
-          });
-
-          const existingTx = await prisma.transaction.findUnique({
-            where: { productId: product.id },
-          });
-
-          if (!existingTx) {
-            await prisma.transaction.create({
-              data: {
-                productId: product.id,
-                buyerId: winningBid.bidderId,
-                sellerId: product.sellerId,
-                amount: winningBid.amount,
-                status: "PAID",
-              },
-            });
-
-            await createNotification({
-              userId: winningBid.bidderId,
-              title: "คุณชนะการประมูล!",
-              message: `ยินดีด้วย! คุณชนะการประมูลสินค้า "${product.title}" ในราคา ฿${winningBid.amount.toLocaleString()}`,
-              type: "WON",
-              link: `/bidding`,
-              imageUrl: product.images[0]?.imageUrl,
-            });
-          }
-        } else {
-          await prisma.product.update({
-            where: { id: product.id },
-            data: { status: "ENDED" },
-          });
-        }
-      }
-    } catch (finalizeErr) {
-      console.error("Auto-finalize auctions warning:", finalizeErr);
-    }
+    // Auto-finalize any ended auctions and deliver notifications
+    await processEndedAuctions();
 
     const [reminders, userBids, wonTransactions] = await Promise.all([
       prisma.productReminder.findMany({

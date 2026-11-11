@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
+import { processEndedAuctions } from "@/lib/auctionService";
+
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
@@ -9,6 +12,9 @@ export async function GET() {
     if (!session || !session.user) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
+
+    // Auto-process any ended auctions and deliver notifications
+    await processEndedAuctions();
 
     const notifications = await prisma.notification.findMany({
       where: {

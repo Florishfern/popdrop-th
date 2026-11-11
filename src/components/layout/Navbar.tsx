@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { X, User, Search, Bell, CheckCircle, Package, Gavel } from "lucide-react";
@@ -59,7 +59,7 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  useEffect(() => {
+  const fetchNotifications = useCallback(() => {
     if (session?.user) {
       fetch("/api/v1/notifications")
         .then((res) => res.json())
@@ -68,10 +68,20 @@ export default function Navbar() {
         })
         .catch((err) => console.error("Failed to fetch notifications", err));
     }
-  }, [session]);
+  }, [session?.user]);
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 5000); // Polling every 5 seconds for real-time notification badge
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
 
   const handleToggleNotifications = () => {
-    if (notificationsOpen) setViewAll(false);
+    if (!notificationsOpen) {
+      fetchNotifications(); // Refresh notifications immediately upon clicking
+    } else {
+      setViewAll(false);
+    }
     setNotificationsOpen(!notificationsOpen);
   };
 
