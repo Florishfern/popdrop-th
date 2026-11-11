@@ -7,6 +7,7 @@ export interface Seller {
 
 export interface Product {
   id: string;
+  sellerId?: string;
   title: string;
   category: string;
   imageUrl: string;

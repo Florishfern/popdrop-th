@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Tilt from "react-parallax-tilt";
 import { Product } from "@/types";
 import { Bell, Check } from "lucide-react";
@@ -16,6 +17,13 @@ interface ProductCardProps {
 export default function ProductCard({ product, onToggleReminder }: ProductCardProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const currentUserId = session?.user?.id;
+  const isOwner = !!(
+    currentUserId &&
+    (product.seller?.id === currentUserId || product.sellerId === currentUserId)
+  );
+
   const [isNotified, setIsNotified] = useState<boolean>(!!product.isNotified);
   const [isToggling, setIsToggling] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<Date>(() => new Date());
@@ -50,6 +58,11 @@ export default function ProductCard({ product, onToggleReminder }: ProductCardPr
   const handleNotifyClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (isOwner) {
+      alert("คุณเป็นผู้ขาย ไม่สามารถตั้งการแจ้งเตือนสินค้าของตนเองได้");
+      return;
+    }
 
     if (isToggling) return;
     setIsToggling(true);
@@ -135,7 +148,18 @@ export default function ProductCard({ product, onToggleReminder }: ProductCardPr
             </span>
           </div>
 
-          {isLive ? (
+          {isOwner ? (
+            <span
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              title="คุณเป็นผู้ขายสินค้านี้"
+              className="bg-neutral-100 text-neutral-500 text-xs font-semibold px-3.5 py-2 rounded-full border border-neutral-200 cursor-not-allowed select-none"
+            >
+              สินค้าของคุณ
+            </span>
+          ) : isLive ? (
             <span className="bg-black text-white text-xs font-bold px-5 py-2.5 rounded-full hover:bg-neutral-800 transition-all shadow-xs">
               Bid Now
             </span>

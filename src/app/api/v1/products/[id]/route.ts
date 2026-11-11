@@ -28,6 +28,7 @@ export async function GET(
     // Map to frontend structure
     const formattedProduct = {
       id: product.id,
+      sellerId: product.sellerId,
       title: product.title,
       description: product.description,
       currentBid: product.currentPrice,

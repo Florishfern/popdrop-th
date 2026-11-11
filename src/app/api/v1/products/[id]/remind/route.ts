@@ -15,6 +15,22 @@ export async function POST(
 
     const { id: productId } = await params;
 
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      select: { sellerId: true },
+    });
+
+    if (!product) {
+      return NextResponse.json({ message: "Product not found" }, { status: 404 });
+    }
+
+    if (product.sellerId === session.user.id) {
+      return NextResponse.json(
+        { message: "คุณเป็นผู้ขาย ไม่สามารถตั้งการแจ้งเตือนสินค้าของตนเองได้" },
+        { status: 400 }
+      );
+    }
+
     // Check if reminder already exists
     const existingReminder = await prisma.productReminder.findUnique({
       where: {

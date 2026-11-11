@@ -78,6 +78,7 @@ export async function GET(req: Request) {
     // Map Prisma response to match the frontend expected structure
     const formattedProducts = products.map((p: any) => ({
       id: p.id,
+      sellerId: p.sellerId,
       title: p.title,
       description: p.description,
       currentBid: p.currentPrice,

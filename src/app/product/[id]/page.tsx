@@ -33,6 +33,12 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
   const router = useRouter();
   const pathname = usePathname();
 
+  const currentUserId = session?.user?.id;
+  const isOwner = !!(
+    currentUserId &&
+    (product?.seller?.id === currentUserId || product?.sellerId === currentUserId)
+  );
+
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
@@ -78,6 +84,12 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
   const handleBid = async () => {
     if (!session || !session.user) {
       router.push(`/login?callbackUrl=${encodeURIComponent(pathname)}`);
+      return;
+    }
+
+    if (isOwner) {
+      setToastMessage("คุณเป็นผู้ขาย ไม่สามารถประมูลสินค้าของตนเองได้");
+      setTimeout(() => setToastMessage(null), 3000);
       return;
     }
 
@@ -244,7 +256,14 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                 ) : null}
               </div>
 
-              {isLive ? (
+              {isOwner ? (
+                <button
+                  disabled
+                  className="w-full bg-neutral-100 border border-neutral-200 text-neutral-500 py-4 rounded-xl font-bold text-sm cursor-not-allowed flex items-center justify-center gap-2 select-none"
+                >
+                  คุณเป็นผู้ขายสินค้านี้ (ไม่สามารถประมูลหรือกดแจ้งเตือนตนเองได้)
+                </button>
+              ) : isLive ? (
                 <button
                   onClick={handleBid}
                   disabled={isBidding}
@@ -260,6 +279,11 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                   onClick={async () => {
                     if (!session || !session.user) {
                       router.push(`/login?callbackUrl=${encodeURIComponent(pathname)}`);
+                      return;
+                    }
+                    if (isOwner) {
+                      setToastMessage("คุณเป็นผู้ขาย ไม่สามารถตั้งการแจ้งเตือนสินค้าของตนเองได้");
+                      setTimeout(() => setToastMessage(null), 3000);
                       return;
                     }
                     setIsTogglingRemind(true);

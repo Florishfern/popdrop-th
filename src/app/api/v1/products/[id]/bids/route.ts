@@ -94,6 +94,10 @@ export async function POST(
         throw new Error("Product not found");
       }
 
+      if (product.sellerId === session.user.id) {
+        throw new Error("คุณเป็นผู้ขาย ไม่สามารถประมูลสินค้าของตนเองได้");
+      }
+
       if (product.status !== "LIVE") {
         throw new Error("Bidding is not active for this product");
       }
