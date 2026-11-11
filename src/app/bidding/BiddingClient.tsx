@@ -223,19 +223,12 @@ export default function BiddingClient() {
               >
                 ซื้อเลย
               </Link>
-              {!session ? (
+              {!session && (
                 <Link
                   href="/login?callbackUrl=/bidding"
                   className="w-full sm:w-[252px] h-[48px] bg-[#141414] hover:bg-[#262626] text-white font-medium text-[15px] rounded-[10px] flex items-center justify-center transition-colors"
                 >
                   เข้าสู่ระบบ / สมัครสมาชิก
-                </Link>
-              ) : (
-                <Link
-                  href="/profile"
-                  className="w-full sm:w-[252px] h-[48px] bg-[#141414] hover:bg-[#262626] text-white font-medium text-[15px] rounded-[10px] flex items-center justify-center transition-colors"
-                >
-                  ดูโปรไฟล์ของฉัน
                 </Link>
               )}
             </div>
