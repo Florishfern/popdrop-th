@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import prisma from "@/lib/prisma";
 
 export const dynamic = 'force-dynamic';
 
-const prisma = new PrismaClient();
-
 export async function GET(req: Request) {
   try {
+    const session = await getServerSession(authOptions);
+    const userId = session?.user?.id;
     const { searchParams } = new URL(req.url);
     const search = searchParams.get("search")?.toLowerCase() || "";
     const sort = searchParams.get("sort") || "popular";
@@ -62,6 +64,10 @@ export async function GET(req: Request) {
           seller: {
             select: { name: true, image: true, id: true }
           },
+          ProductReminder: userId ? {
+            where: { userId },
+            select: { id: true }
+          } : false,
           _count: {
             select: { bids: true }
           }
@@ -70,16 +76,18 @@ export async function GET(req: Request) {
     ]);
 
     // Map Prisma response to match the frontend expected structure
-    const formattedProducts = products.map((p) => ({
+    const formattedProducts = products.map((p: any) => ({
       id: p.id,
       title: p.title,
       description: p.description,
       currentBid: p.currentPrice,
       price: p.startPrice,
+      minBidStep: Math.round(p.startPrice * 0.05),
       startTime: p.startTime.toISOString(),
       endTime: p.endTime.toISOString(),
       status: p.status,
       isAuction: true, // simplified for now
+      isNotified: Array.isArray(p.ProductReminder) && p.ProductReminder.length > 0,
       imageUrl: p.images.length > 0 ? p.images[0].imageUrl : "https://via.placeholder.com/300",
       category: p.category || "Art Toy",
       seller: {

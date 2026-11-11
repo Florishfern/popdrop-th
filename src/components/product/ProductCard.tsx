@@ -1,32 +1,85 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import Tilt from "react-parallax-tilt";
 import { Product } from "@/types";
-import { Bell } from "lucide-react";
+import { Bell, Check } from "lucide-react";
 
 interface ProductCardProps {
   product: Product;
+  onToggleReminder?: (productId: string, isReminded: boolean) => void;
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
-  const isCard = product.category.toLowerCase() === "card" || product.category.toLowerCase() === "trading card" || product.category.toLowerCase() === "pokemon" || product.category.toLowerCase() === "lorcana";
+export default function ProductCard({ product, onToggleReminder }: ProductCardProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [isNotified, setIsNotified] = useState<boolean>(!!product.isNotified);
+  const [isToggling, setIsToggling] = useState<boolean>(false);
+
+  useEffect(() => {
+    setIsNotified(!!product.isNotified);
+  }, [product.isNotified]);
+
+  const isCard =
+    product.category.toLowerCase() === "card" ||
+    product.category.toLowerCase() === "trading card" ||
+    product.category.toLowerCase() === "pokemon" ||
+    product.category.toLowerCase() === "lorcana";
   const now = new Date();
   const startTime = product.startTime ? new Date(product.startTime) : now;
   const isTimeLive = product.endTime ? new Date(product.endTime) > now : true;
   const hasStarted = now >= startTime;
-  const isLive = (product.status === "Live Auction" || product.status === "LIVE") && isTimeLive && hasStarted;
+  const isLive =
+    (product.status === "Live Auction" || product.status === "LIVE") &&
+    isTimeLive &&
+    hasStarted;
+
+  const handleNotifyClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (isToggling) return;
+    setIsToggling(true);
+
+    try {
+      const res = await fetch(`/api/v1/products/${product.id}/remind`, {
+        method: "POST",
+      });
+
+      if (res.status === 401) {
+        router.push(`/login?callbackUrl=${encodeURIComponent(pathname || "/market")}`);
+        return;
+      }
+
+      if (res.ok) {
+        const data = await res.json();
+        setIsNotified(!!data.isReminded);
+        if (onToggleReminder) {
+          onToggleReminder(product.id, !!data.isReminded);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to toggle reminder:", err);
+    } finally {
+      setIsToggling(false);
+    }
+  };
 
   const cardContent = (
     <div className="relative w-full h-full rounded-2xl overflow-hidden bg-white shadow-lg border border-neutral-100 group flex flex-col">
       {/* Status Badge */}
       <div className="absolute top-3 right-3 z-10">
         <span
-          className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase shadow-sm ${isLive ? "text-[var(--color-pop-red)] bg-red-50 animate-pulse border border-red-100" : "text-white bg-neutral-800"
-            }`}
+          className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase shadow-sm ${
+            isLive
+              ? "text-[var(--color-pop-red)] bg-red-50 animate-pulse border border-red-100"
+              : "text-white bg-neutral-800"
+          }`}
         >
-          {isLive ? "LIVE" : (!hasStarted && isTimeLive ? "Upcoming" : product.status)}
+          {isLive ? "LIVE" : !hasStarted && isTimeLive ? "Upcoming" : product.status}
         </span>
       </div>
 
@@ -36,7 +89,9 @@ export default function ProductCard({ product }: ProductCardProps) {
           src={product.imageUrl}
           alt={product.title}
           fill
-          className={`object-contain transition-transform duration-500 ${isCard ? "scale-95" : "group-hover:scale-105"}`}
+          className={`object-contain transition-transform duration-500 ${
+            isCard ? "scale-95" : "group-hover:scale-105"
+          }`}
         />
 
         {/* Holographic Rainbow Foil Overlay Effect */}
@@ -49,26 +104,45 @@ export default function ProductCard({ product }: ProductCardProps) {
 
       {/* Info Section */}
       <div className="p-5 flex flex-col flex-1 gap-1.5">
-        <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">{product.category}</p>
-        <h3 className="font-sans font-bold text-base sm:text-lg text-black truncate">{product.title}</h3>
+        <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">
+          {product.category}
+        </p>
+        <h3 className="font-sans font-bold text-base sm:text-lg text-black truncate">
+          {product.title}
+        </h3>
 
         <div className="mt-auto pt-4 flex items-center justify-between">
           <div className="flex flex-col">
             <span className="text-[11px] text-neutral-500">
               {isLive ? "Current Bid" : "Starting Bid"}
             </span>
-            <span className="font-bold text-base sm:text-lg text-[var(--color-pop-red)]">฿{product.currentBid.toLocaleString()}</span>
+            <span className="font-bold text-base sm:text-lg text-[var(--color-pop-red)]">
+              ฿{product.currentBid.toLocaleString()}
+            </span>
           </div>
-          
+
           {isLive ? (
-            <button className="bg-black text-white text-xs font-bold px-5 py-2.5 rounded-full hover:bg-neutral-800 transition-all">
+            <span className="bg-black text-white text-xs font-bold px-5 py-2.5 rounded-full hover:bg-neutral-800 transition-all">
               Bid Now
+            </span>
+          ) : !hasStarted && isTimeLive ? (
+            <button
+              type="button"
+              onClick={handleNotifyClick}
+              disabled={isToggling}
+              className={`flex items-center gap-1.5 text-xs font-bold px-4 py-2.5 rounded-full transition-all cursor-pointer ${
+                isNotified
+                  ? "bg-black text-white border border-black hover:bg-neutral-800"
+                  : "bg-neutral-100 text-black border border-neutral-200 hover:bg-neutral-200"
+              }`}
+            >
+              {isNotified ? <Check size={14} /> : <Bell size={14} />}
+              {isNotified ? "Notified" : "Notify Me"}
             </button>
           ) : (
-            <button className="flex items-center gap-1.5 bg-neutral-100 text-black border border-neutral-200 text-xs font-bold px-4 py-2.5 rounded-full hover:bg-neutral-200 transition-all">
-              <Bell size={14} />
-              Notify Me
-            </button>
+            <span className="bg-neutral-100 text-neutral-500 text-xs font-bold px-4 py-2.5 rounded-full">
+              {product.status === "SOLD" ? "Sold" : "Ended"}
+            </span>
           )}
         </div>
       </div>

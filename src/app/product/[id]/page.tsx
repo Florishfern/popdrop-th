@@ -3,7 +3,7 @@
 import { useEffect, useState, use } from "react";
 import Image from "next/image";
 
-import { ArrowLeft, Sparkles, CheckCircle } from "lucide-react";
+import { ArrowLeft, Sparkles, CheckCircle, Bell, Check } from "lucide-react";
 import Tilt from "react-parallax-tilt";
 import Spline from "@splinetool/react-spline";
 import { motion } from "framer-motion";
@@ -24,6 +24,8 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [isBidding, setIsBidding] = useState(false);
+  const [isReminded, setIsReminded] = useState(false);
+  const [isTogglingRemind, setIsTogglingRemind] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const { data: session } = useSession();
@@ -40,12 +42,20 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
       }
       setLoading(false);
     });
+    fetch(`/api/v1/products/${productId}/remind`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && typeof data.isReminded === "boolean") {
+          setIsReminded(data.isReminded);
+        }
+      })
+      .catch(() => {});
   }, [productId]);
 
   // Polling strategy every 3 seconds for Bid History
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (product?.status === "Live Auction") {
+    if (product?.status === "Live Auction" || product?.status === "LIVE") {
       const poll = () => {
         fetchBidHistory(productId).then((data) => setBidHistory(data));
         // Also refresh product to get latest currentBid
@@ -227,8 +237,43 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                   {isBidding ? "Processing..." : `Bid Now (฿${(product.currentBid + product.minBidStep).toLocaleString()})`}
                 </button>
               ) : (!hasStarted && isTimeLive) ? (
-                <button disabled className="w-full bg-neutral-200 text-neutral-500 py-4 rounded-xl font-bold text-sm cursor-not-allowed">
-                  Auction Upcoming
+                <button
+                  type="button"
+                  disabled={isTogglingRemind}
+                  onClick={async () => {
+                    if (!session || !session.user) {
+                      router.push(`/login?callbackUrl=${encodeURIComponent(pathname)}`);
+                      return;
+                    }
+                    setIsTogglingRemind(true);
+                    try {
+                      const res = await fetch(`/api/v1/products/${productId}/remind`, {
+                        method: "POST",
+                      });
+                      if (res.ok) {
+                        const data = await res.json();
+                        setIsReminded(!!data.isReminded);
+                        setToastMessage(
+                          data.isReminded
+                            ? "เพิ่มลงในหน้า Bidding > Upcoming เรียบร้อยแล้ว"
+                            : "ยกเลิกการแจ้งเตือนแล้ว"
+                        );
+                        setTimeout(() => setToastMessage(null), 3000);
+                      }
+                    } catch (err) {
+                      console.error(err);
+                    } finally {
+                      setIsTogglingRemind(false);
+                    }
+                  }}
+                  className={`w-full py-4 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors cursor-pointer ${
+                    isReminded
+                      ? "bg-neutral-900 hover:bg-neutral-800 text-white"
+                      : "bg-black hover:bg-neutral-800 text-white"
+                  }`}
+                >
+                  {isReminded ? <Check size={18} /> : <Bell size={18} />}
+                  {isReminded ? "Notified (อยู่ในรายการ Upcoming แล้ว)" : "Notify Me (แจ้งเตือนเมื่อเริ่มประมูล)"}
                 </button>
               ) : (
                 <button disabled className="w-full bg-neutral-200 text-neutral-500 py-4 rounded-xl font-bold text-sm cursor-not-allowed">
