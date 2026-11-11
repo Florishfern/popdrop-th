@@ -8,7 +8,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useSession } from "next-auth/react";
 
 const navLinks = [
-  { name: "home", href: "/" },
   { name: "market", href: "/market" },
   { name: "bidding", href: "/bidding" },
   { name: "seller", href: "/seller" },
@@ -129,7 +128,7 @@ export default function Navbar() {
     <>
       <nav className="w-full px-6 sm:px-10 lg:px-16 py-6 lg:py-8 flex items-center justify-between gap-4">
         {/* Left: Logo */}
-        <Link href="/" className="flex items-center gap-2 z-50 shrink-0">
+        <Link href="/" className="flex items-center gap-2 z-50 shrink-0 cursor-pointer hover:opacity-85 transition-opacity" title="PopDropTH Home">
           <div className="w-8 h-8 sm:w-10 sm:h-10 text-[var(--color-pop-red)]">
             <svg viewBox="0 0 24 24" fill="currentColor" className="w-full h-full">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9v-2h2v2zm0-4H9V7h2v5zm4 4h-2v-2h2v2zm0-4h-2V7h2v5z" />
