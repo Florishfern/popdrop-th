@@ -40,11 +40,12 @@ export default function ProductCard({ product, onToggleReminder }: ProductCardPr
     return () => clearInterval(timer);
   }, []);
 
+  const cardCat = (product.category || "").toLowerCase();
   const isCard =
-    product.category.toLowerCase() === "card" ||
-    product.category.toLowerCase() === "trading card" ||
-    product.category.toLowerCase() === "pokemon" ||
-    product.category.toLowerCase() === "lorcana";
+    cardCat === "card" ||
+    cardCat === "trading card" ||
+    cardCat === "pokemon" ||
+    cardCat === "lorcana";
 
   const startTime = product.startTime ? new Date(product.startTime) : currentTime;
   const endTime = product.endTime ? new Date(product.endTime) : null;

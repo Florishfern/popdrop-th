@@ -14,11 +14,20 @@ import { Product, BidHistory } from "@/types";
 import { fetchProductById, fetchBidHistory, placeBid, fetchRelatedProducts } from "@/services/api";
 import ProductCard from "@/components/product/ProductCard";
 import { useSession } from "next-auth/react";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useParams } from "next/navigation";
 
 export default function ProductDetail({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = use(params);
-  const productId = resolvedParams.id;
+  const routeParams = useParams<{ id: string }>();
+  let paramId = routeParams?.id;
+  if (!paramId && params) {
+    try {
+      const resolved = typeof (params as any)?.then === "function" ? use(params) : params;
+      paramId = (resolved as any)?.id;
+    } catch {
+      // Fallback if use() throws
+    }
+  }
+  const productId = paramId || "";
 
   const [product, setProduct] = useState<Product | null>(null);
   const [bidHistory, setBidHistory] = useState<BidHistory[]>([]);
@@ -65,13 +74,20 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
   }, []);
 
   useEffect(() => {
+    if (!productId) return;
     fetchProductById(productId).then((data) => {
       setProduct(data);
-      if (data) {
-        fetchRelatedProducts(productId, data.category).then((related) => {
-          setRelatedProducts(related);
-        });
+      if (data && data.category) {
+        fetchRelatedProducts(productId, data.category)
+          .then((related) => {
+            setRelatedProducts(related || []);
+          })
+          .catch(() => {
+            setRelatedProducts([]);
+          });
       }
+      setLoading(false);
+    }).catch(() => {
       setLoading(false);
     });
     fetch(`/api/v1/products/${productId}/remind`)
@@ -175,7 +191,8 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
     return <main className="min-h-screen w-full flex items-center justify-center">Product not found.</main>;
   }
 
-  const isCard = product.category.toLowerCase() === "card" || product.category.toLowerCase() === "trading card" || product.category.toLowerCase() === "pokemon" || product.category.toLowerCase() === "lorcana";
+  const productCat = (product.category || "").toLowerCase();
+  const isCard = productCat === "card" || productCat === "trading card" || productCat === "pokemon" || productCat === "lorcana";
   const has3DModel = !!product.model3dUrl;
 
   const startTime = product.startTime ? new Date(product.startTime) : currentTime;
@@ -253,12 +270,17 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
             {product.seller && (
               <div className="flex items-center gap-3 mb-8">
                 <div className="relative w-10 h-10 rounded-full overflow-hidden bg-neutral-100">
-                  <Image src={product.seller.avatar} alt={product.seller.name} fill className="object-cover" />
+                  <Image
+                    src={product.seller.avatar || "https://api.dicebear.com/7.x/bottts/svg?seed=Seller"}
+                    alt={product.seller.name || "Seller"}
+                    fill
+                    className="object-cover"
+                  />
                 </div>
                 <div className="flex flex-col justify-center">
                   <span className="text-sm font-bold text-black flex items-center gap-1.5 leading-none">
-                    {product.seller.name}
-                    {product.seller.totalSalesCount >= 100 && (
+                    {product.seller.name || "Seller"}
+                    {(product.seller.totalSalesCount || 0) >= 100 && (
                       <CheckCircle size={14} className="text-blue-500" />
                     )}
                   </span>
