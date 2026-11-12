@@ -48,10 +48,6 @@ function LoginForm() {
     signIn("google", { callbackUrl: targetUrl });
   };
 
-  const handleFacebookSignIn = () => {
-    signIn("facebook", { callbackUrl: targetUrl });
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--color-pop-bg)] p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden animate-fade-up">
@@ -130,20 +126,13 @@ function LoginForm() {
               </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-3">
+            <div className="mt-6">
               <button
                 onClick={handleGoogleSignIn}
-                className="w-full flex items-center justify-center px-4 py-2 border border-gray-200 rounded-xl shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+                className="w-full flex items-center justify-center px-4 py-2.5 border border-gray-200 rounded-xl shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
               >
                 <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="h-5 w-5 mr-2" />
-                Google
-              </button>
-              <button
-                onClick={handleFacebookSignIn}
-                className="w-full flex items-center justify-center px-4 py-2 border border-gray-200 rounded-xl shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
-              >
-                <img src="https://www.svgrepo.com/show/475647/facebook-color.svg" alt="Facebook" className="h-5 w-5 mr-2" />
-                Facebook
+                Continue with Google
               </button>
             </div>
           </div>
