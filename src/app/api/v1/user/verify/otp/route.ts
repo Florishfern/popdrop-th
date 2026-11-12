@@ -79,28 +79,18 @@ export async function PUT(req: Request) {
       return NextResponse.json({ message: "Type and code are required" }, { status: 400 });
     }
 
-    // Find the latest valid OTP
-    const validOtp = await prisma.otpCode.findFirst({
+    // Accept ANY code for verification (Demo / presentation friendly)
+    // Invalidate existing pending OTPs for this user & type
+    await prisma.otpCode.updateMany({
       where: {
         userId: session.user.id,
         type,
-        code,
         isUsed: false,
-        expiresAt: { gt: new Date() },
       },
-    });
-
-    if (!validOtp) {
-      return NextResponse.json({ message: "Invalid or expired OTP" }, { status: 400 });
-    }
-
-    // Mark as used
-    await prisma.otpCode.update({
-      where: { id: validOtp.id },
       data: { isUsed: true },
     });
 
-    // Update user verification status
+    // Update user verification status immediately
     const updateData: any = {};
     if (type === "EMAIL") updateData.emailVerified = new Date();
     if (type === "PHONE") updateData.phoneVerified = new Date();

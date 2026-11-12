@@ -175,11 +175,7 @@ export default function ProfileClient() {
       }
       setOtpType(type);
       const res = await sendOtp(type, target);
-      if (res.devCode) {
-        showToast(`[DEV] OTP Code is: ${res.devCode}`);
-      } else {
-        showToast(`รหัส OTP ถูกส่งไปยัง ${type === "EMAIL" ? "อีเมล" : "เบอร์โทรศัพท์"} ของคุณแล้ว`);
-      }
+      showToast(`รหัส OTP ถูกส่งแล้ว (สามารถกรอกเลขอะไรก็ได้)`);
       setShowOtpModal(true);
     } catch (error: any) {
       showToast(error.message || "Failed to send OTP");
@@ -187,8 +183,8 @@ export default function ProfileClient() {
   };
 
   const handleVerifyOtp = async () => {
-    if (!otpCode || otpCode.length !== 6) {
-      showToast("กรุณากรอกรหัส OTP 6 หลัก");
+    if (!otpCode || !otpCode.trim()) {
+      showToast("กรุณากรอกรหัส OTP");
       return;
     }
     try {
@@ -802,7 +798,7 @@ export default function ProfileClient() {
             <div>
               <h2 className="text-2xl font-black text-black mb-2">Verify {otpType === "EMAIL" ? "Email Address" : "Phone Number"}</h2>
               <p className="text-sm text-neutral-500 font-medium">
-                เราได้ส่งรหัส OTP 6 หลักไปยัง {otpType === "EMAIL" ? profile?.email : profile?.phone}
+                ระบบส่งรหัส OTP ไปยัง {otpType === "EMAIL" ? profile?.email : profile?.phone} เรียบร้อยแล้ว (สามารถกรอกเลขอะไรก็ได้เพื่อยืนยัน)
               </p>
             </div>
 
@@ -812,10 +808,9 @@ export default function ProfileClient() {
               </label>
               <input 
                 type="text" 
-                maxLength={6}
                 value={otpCode}
                 onChange={(e) => setOtpCode(e.target.value)}
-                placeholder="กรอกรหัส OTP"
+                placeholder="กรอกรหัสอะไรก็ได้"
                 className="w-full bg-neutral-50 border border-neutral-200 px-4 py-3.5 rounded-xl text-center font-mono font-bold text-lg text-black outline-none tracking-widest focus:ring-2 focus:ring-black/10 focus:border-black"
               />
             </div>
