@@ -12,8 +12,14 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "PopDropTH | Luxury NFT Collection",
-  description: "Limited-edition NFT animals with distinct traits. Collect, trade, and build your digital zoo.",
+  title: "PopDropTH | Rare Art Toys & Collectibles Auction Platform",
+  description: "Never miss a rare drop — แหล่งรวมประมูลสดและซื้อขาย Art Toy, การ์ดสะสม Trading Card และโมเดลฟิกเกอร์ระดับแรร์ของแท้",
+  openGraph: {
+    title: "PopDropTH | Rare Art Toys & Collectibles Auction Platform",
+    description: "Never miss a rare drop — แหล่งรวมประมูลสดและซื้อขาย Art Toy, การ์ดสะสม Trading Card และโมเดลฟิกเกอร์ระดับแรร์ของแท้",
+    siteName: "PopDrop",
+    type: "website",
+  },
 };
 
 export const dynamic = 'force-dynamic';
