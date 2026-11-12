@@ -37,8 +37,15 @@ export default async function RootLayout({
   let isAdminOrApi = false;
   try {
     const headersList = await headers();
-    const pathname = headersList.get("x-pathname") || "";
-    if (pathname.startsWith("/admin") || pathname.startsWith("/api")) {
+    const pathname = headersList.get("x-pathname") || headersList.get("x-invoke-path") || "";
+    const referer = headersList.get("referer") || "";
+    if (
+      pathname.startsWith("/admin") || 
+      pathname.startsWith("/api") || 
+      pathname.startsWith("/chaos") ||
+      referer.includes("/admin/chaos") ||
+      referer.includes("/chaos")
+    ) {
       isAdminOrApi = true;
     }
   } catch {

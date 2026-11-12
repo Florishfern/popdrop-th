@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import PaymentSettings from "./PaymentSettings";
 import Helps from "./Helps";
@@ -338,8 +339,16 @@ export default function ProfileClient() {
           ))}
         </nav>
 
-        {/* Danger Zone */}
+        {/* SRE / Admin Quick Access */}
         <div className="mt-8 space-y-2">
+          <Link 
+            href="/admin/chaos"
+            className="flex items-center gap-3 px-4 py-3 w-full rounded-2xl text-sm font-bold text-indigo-600 bg-indigo-50/80 hover:bg-indigo-100 transition-colors group"
+          >
+            <ShieldCheck size={18} strokeWidth={2.5} className="text-indigo-500" />
+            Chaos Testing (SRE)
+          </Link>
+
           <button 
             onClick={async () => {
               await signOut({ redirect: false });
