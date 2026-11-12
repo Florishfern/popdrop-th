@@ -31,7 +31,7 @@ function LoginForm() {
         password,
       });
 
-      if (res?.error) {
+      if (res?.error || !res?.ok || res?.url?.includes("csrf=true") || res?.url?.includes("error=")) {
         setError("Invalid email or password");
       } else {
         // Full browser navigation guarantees session cookie synchronization across NextAuth SessionProvider & Navbar

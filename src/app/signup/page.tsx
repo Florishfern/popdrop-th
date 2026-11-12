@@ -43,7 +43,7 @@ function SignupForm() {
         password,
       });
 
-      if (loginRes?.error) {
+      if (loginRes?.error || !loginRes?.ok || loginRes?.url?.includes("csrf=true")) {
         setError("Account created, but failed to log in automatically.");
       } else {
         // Full browser navigation guarantees session cookie synchronization across NextAuth SessionProvider & Navbar

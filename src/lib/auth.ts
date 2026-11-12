@@ -102,12 +102,22 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
+      if (!session.user && token) {
+        session.user = {
+          id: token.sub || "",
+          name: token.name as string || "User",
+          email: token.email as string || "",
+          image: token.picture as string || "",
+          role: (token.role as string) || "USER",
+          isAdmin: !!token.isAdmin || token.role === "ADMIN" || token.email === "admin@popdrop.com",
+        } as any;
+      }
       if (session.user && token.sub) {
         session.user.id = token.sub;
       }
       if (session.user) {
-        session.user.name = token.name as string;
-        session.user.image = token.picture as string;
+        session.user.name = (token.name as string) || session.user.name || "User";
+        session.user.image = (token.picture as string) || session.user.image || "";
         session.user.role = (token.role as string) || (token.isAdmin ? "ADMIN" : "USER");
         session.user.isAdmin = !!token.isAdmin || token.role === "ADMIN" || session.user.email === "admin@popdrop.com";
       }
@@ -117,6 +127,34 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/login",
   },
-  useSecureCookies: process.env.NEXTAUTH_URL?.startsWith("https://") ?? false,
+  cookies: {
+    sessionToken: {
+      name: "next-auth.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: false,
+      },
+    },
+    callbackUrl: {
+      name: "next-auth.callback-url",
+      options: {
+        sameSite: "lax",
+        path: "/",
+        secure: false,
+      },
+    },
+    csrfToken: {
+      name: "next-auth.csrf-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: false,
+      },
+    },
+  },
+  useSecureCookies: false,
   secret: process.env.NEXTAUTH_SECRET || "popdrop_super_secret_key_12345",
 };

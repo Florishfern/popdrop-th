@@ -4,6 +4,8 @@ import "./globals.css";
 import { Providers } from "@/components/Providers";
 import { headers } from "next/headers";
 import prisma from "@/lib/prisma";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
   subsets: ["latin"],
@@ -58,6 +60,8 @@ export default async function RootLayout({
     throw new Error("SYSTEM_HACKED");
   }
 
+  const session = await getServerSession(authOptions);
+
   return (
     <html
       lang="en"
@@ -74,7 +78,7 @@ export default async function RootLayout({
             </p>
           </div>
         ) : (
-          <Providers>
+          <Providers session={session}>
             {children}
           </Providers>
         )}
