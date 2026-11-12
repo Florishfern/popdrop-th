@@ -158,7 +158,7 @@ resource "aws_ecs_task_definition" "app" {
         },
         {
           name  = "NEXT_PUBLIC_CLOUDFRONT_URL"
-          value = "https://${aws_s3_bucket.assets_bucket.bucket_regional_domain_name}"
+          value = "https://${aws_cloudfront_distribution.cdn.domain_name}"
         },
         {
           name  = "AWS_REGION"
@@ -170,7 +170,7 @@ resource "aws_ecs_task_definition" "app" {
         },
         {
           name  = "NEXTAUTH_URL"
-          value = "http://${aws_lb.app_alb.dns_name}"
+          value = "https://${aws_cloudfront_distribution.cdn.domain_name}"
         },
         {
           name  = "NEXTAUTH_SECRET"

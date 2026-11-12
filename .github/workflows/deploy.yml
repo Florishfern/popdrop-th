@@ -74,8 +74,14 @@ jobs:
         run: |
           aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service ${{ env.ECS_SERVICE }} --force-new-deployment --region ${{ env.AWS_REGION }}
 
-      # Invalidate CloudFront Cache (Optional if CloudFront is active)
+      # Invalidate CloudFront Cache
       - name: Invalidate CloudFront
         continue-on-error: true
         run: |
-          aws cloudfront create-invalidation --distribution-id E3VLL4KB73PQWL --paths "/*" || echo "CloudFront skipped"
+          DIST_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[0].Id" --output text)
+          if [ "$DIST_ID" != "None" ] && [ -n "$DIST_ID" ]; then
+            echo "Invalidating CloudFront cache for Distribution: $DIST_ID"
+            aws cloudfront create-invalidation --distribution-id $DIST_ID --paths "/*"
+          else
+            echo "No CloudFront distribution found, skipping."
+          fi
