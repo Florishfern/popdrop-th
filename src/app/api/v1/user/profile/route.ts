@@ -18,6 +18,8 @@ export async function GET() {
         email: true,
         image: true,
         phone: true,
+        role: true,
+        isAdmin: true,
         emailVerified: true,
         phoneVerified: true,
         sellerInfo: {
@@ -96,6 +98,8 @@ export async function PUT(req: Request) {
         email: true,
         image: true,
         phone: true,
+        role: true,
+        isAdmin: true,
         emailVerified: true,
         phoneVerified: true,
         sellerInfo: {

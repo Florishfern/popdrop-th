@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { 
   ArrowLeft, 
   Cpu, 
@@ -44,6 +45,13 @@ export default function ChaosAdmin() {
   });
   const [isToggling, setIsToggling] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const { data: session, status } = useSession();
+  const isAdmin = !!(
+    (session?.user as any)?.isAdmin ||
+    (session?.user as any)?.role === "ADMIN" ||
+    session?.user?.email === "admin@popdrop.com"
+  );
 
   // Fetch status from DB
   const fetchStatus = useCallback(async () => {
@@ -205,6 +213,46 @@ export default function ChaosAdmin() {
         return <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-600">INFO</span>;
     }
   };
+
+  if (status === "loading") {
+    return (
+      <main className="min-h-screen bg-[#f0f2f5] p-6 flex items-center justify-center font-sans">
+        <div className="animate-spin w-8 h-8 border-4 border-purple-600 border-t-transparent rounded-full"></div>
+      </main>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <main className="min-h-screen bg-[#f0f2f5] p-6 flex items-center justify-center font-sans">
+        <div className="max-w-md w-full bg-white rounded-3xl p-8 shadow-xl text-center space-y-6 border border-neutral-100 animate-in fade-in zoom-in-95">
+          <div className="w-16 h-16 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center mx-auto">
+            <ShieldCheck size={32} />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-neutral-900 mb-2">Admin Access Required</h1>
+            <p className="text-sm text-neutral-500 leading-relaxed">
+              หน้านี้สงวนสิทธิ์เฉพาะบัญชีผู้ดูแลระบบ (Admin) เท่านั้น กรุณาเข้าสู่ระบบด้วยบัญชี Admin เพื่อควบคุม Chaos Testing Console
+            </p>
+          </div>
+          <div className="flex flex-col gap-2">
+            <Link
+              href="/login?callbackUrl=/admin/chaos"
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3.5 rounded-xl text-sm flex items-center justify-center gap-2 transition-all shadow-md shadow-purple-600/20"
+            >
+              เข้าสู่ระบบด้วยบัญชี Admin
+            </Link>
+            <Link
+              href="/"
+              className="w-full bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-bold py-3.5 rounded-xl text-sm flex items-center justify-center gap-2 transition-all"
+            >
+              กลับหน้าแรก
+            </Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#f0f2f5] p-4 sm:p-8 font-sans text-neutral-800">

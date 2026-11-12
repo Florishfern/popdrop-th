@@ -7,7 +7,7 @@ import { useSearchParams } from "next/navigation";
 import PaymentSettings from "./PaymentSettings";
 import Helps from "./Helps";
 import Transactions from "./Transactions";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { 
   getUserProfile, 
   uploadAvatarImage, 
@@ -109,6 +109,16 @@ export default function ProfileClient() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const kycInputRef = useRef<HTMLInputElement>(null);
+
+  const { data: session } = useSession();
+  const isAdmin = !!(
+    profile?.isAdmin || 
+    profile?.role === "ADMIN" || 
+    profile?.email === "admin@popdrop.com" ||
+    (session?.user as any)?.isAdmin ||
+    (session?.user as any)?.role === "ADMIN" ||
+    session?.user?.email === "admin@popdrop.com"
+  );
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -339,15 +349,24 @@ export default function ProfileClient() {
           ))}
         </nav>
 
-        {/* SRE / Admin Quick Access */}
-        <div className="mt-8 space-y-2">
-          <Link 
-            href="/admin/chaos"
-            className="flex items-center gap-3 px-4 py-3 w-full rounded-2xl text-sm font-bold text-indigo-600 bg-indigo-50/80 hover:bg-indigo-100 transition-colors group"
-          >
-            <ShieldCheck size={18} strokeWidth={2.5} className="text-indigo-500" />
-            Chaos Testing (SRE)
-          </Link>
+        {/* SRE / Admin Quick Access - Shown ONLY for Admin Accounts */}
+        {isAdmin && (
+          <div className="mt-8">
+            <Link 
+              href="/admin/chaos"
+              className="flex items-center gap-3 px-4 py-3 w-full rounded-2xl text-sm font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200/80 transition-all shadow-xs group"
+            >
+              <div className="w-6 h-6 rounded-lg bg-purple-600 text-white flex items-center justify-center shrink-0">
+                <ShieldCheck size={14} strokeWidth={2.5} />
+              </div>
+              <span className="flex-1">Chaos Testing (SRE)</span>
+              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-purple-200 text-purple-800">Admin</span>
+            </Link>
+          </div>
+        )}
+
+        {/* User Account Actions */}
+        <div className={`${isAdmin ? 'mt-4' : 'mt-8'} space-y-2`}>
 
           <button 
             onClick={async () => {

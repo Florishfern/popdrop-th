@@ -15,6 +15,8 @@ export interface UserProfile {
   isPhoneVerified: boolean;
   kycStatus: "Unverified" | "Pending" | "Verified";
   totalSalesCount: number;
+  role?: string;
+  isAdmin?: boolean;
 }
 
 export interface UserAddress {
@@ -125,6 +127,8 @@ export async function getUserProfile(): Promise<UserProfile> {
                 : userData.sellerInfo?.idCardStatus === "PENDING" ? "Pending" 
                 : "Unverified",
     totalSalesCount: userData.sellerInfo?.totalSalesCount || 0,
+    role: userData.role || (userData.isAdmin ? "ADMIN" : "USER"),
+    isAdmin: !!userData.isAdmin || userData.role === "ADMIN" || userData.email === "admin@popdrop.com",
   };
 }
 
