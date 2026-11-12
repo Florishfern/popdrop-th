@@ -4,8 +4,41 @@ import { Worker } from "worker_threads";
 import fs from "fs";
 import os from "os";
 import path from "path";
+import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
 
 export const dynamic = 'force-dynamic';
+
+const snsClient = new SNSClient({ region: process.env.AWS_REGION || "ap-southeast-1" });
+const SNS_TOPIC_ARN = process.env.SNS_TOPIC_ARN || "arn:aws:sns:ap-southeast-1:648043742453:popdrop-system-alerts";
+
+async function sendSnsIncidentReport(status: "TRIGGERED" | "RESOLVED", scenario: string, details: string) {
+  try {
+    const isResolved = status === "RESOLVED";
+    const subject = isResolved 
+      ? `✅ [PopDrop Chaos Auto-Healed] ${scenario} Recovered Successfully`
+      : `🚨 [PopDrop Chaos Alert] ${scenario} Incident Triggered`;
+
+    const message = `PopDrop SRE Chaos Engineering Alert
+============================================================
+Incident Status: ${status}
+Scenario: ${scenario}
+Details: ${details}
+Timestamp: ${new Date().toISOString()}
+Target Environment: AWS ECS (popdrop-cluster) & ALB
+Remediation: AWS Systems Manager (SSM) / Automated Health Recovery
+Dev Team Recipients: 67050820@kmitl.ac.th, 67050466@kmitl.ac.th
+============================================================`;
+
+    await snsClient.send(new PublishCommand({
+      TopicArn: SNS_TOPIC_ARN,
+      Subject: subject.slice(0, 100),
+      Message: message,
+    }));
+    console.log(`[SNS] Dispatched ${status} report for ${scenario}`);
+  } catch (err: any) {
+    console.warn(`[SNS] Failed to dispatch incident report:`, err.message);
+  }
+}
 
 // Global reference to active CPU workers & auto-stop timeout
 declare global {
@@ -86,6 +119,7 @@ export async function POST(req: Request) {
 
         const msg = `Triggered High CPU Load on ${numCores} cores (Auto-Scaling alarm test for 60s)`;
         await recordLog("cpu", "start", msg, `Cores: ${numCores}, Duration: 60s`);
+        sendSnsIncidentReport("TRIGGERED", "High CPU Load (Auto-Scaling)", msg);
 
         // Auto-stop after 60 seconds
         global.__chaosCpuTimeout = setTimeout(async () => {
@@ -101,6 +135,7 @@ export async function POST(req: Request) {
               data: { isCpuBurning: false }
             });
             await recordLog("cpu", "auto-end", "High CPU simulation finished automatically (60s elapsed). CPU load normalized.");
+            sendSnsIncidentReport("RESOLVED", "High CPU Load (Auto-Scaling)", "High CPU simulation finished automatically (60s elapsed). CPU load normalized back to healthy (Self-Healed 100%).");
           } catch {}
         }, 60000);
 
@@ -125,6 +160,7 @@ export async function POST(req: Request) {
 
         const msg = "High CPU simulation stopped manually by operator";
         await recordLog("cpu", "stop", msg);
+        sendSnsIncidentReport("RESOLVED", "High CPU Load (Auto-Scaling)", "High CPU simulation stopped manually by operator. CPU load normalized back to healthy (Self-Healed 100%).");
         return NextResponse.json({ message: msg });
       }
     }
@@ -158,6 +194,7 @@ export async function POST(req: Request) {
 
         const msg = `Allocated 500MB dummy file at ${DUMMY_DISK_FILE} to test SSM Auto-Remediation (Auto-heals in 90s)`;
         await recordLog("disk-full", "start", msg, `File: ${DUMMY_DISK_FILE}, Size: 500MB`);
+        sendSnsIncidentReport("TRIGGERED", "Disk Space Exhaustion (Disk Full)", msg);
 
         // Auto-heal after 90 seconds (Simulate SSM Runbook disk purge)
         global.__chaosDiskTimeout = setTimeout(async () => {
@@ -174,6 +211,7 @@ export async function POST(req: Request) {
               "auto-end",
               "Disk Full simulation resolved automatically (90s elapsed). AWS Systems Manager (SSM) Auto-Remediation runbook completed: Purged 500MB dummy log."
             );
+            sendSnsIncidentReport("RESOLVED", "Disk Space Exhaustion (Disk Full)", "Disk Full simulation resolved automatically (90s elapsed). AWS Systems Manager (SSM) Auto-Remediation runbook completed: Purged 500MB dummy log (Self-Healed 100%).");
           } catch (err) {
             console.error("Failed to auto-heal disk-full:", err);
           }
@@ -196,6 +234,7 @@ export async function POST(req: Request) {
 
         const msg = `Removed 500MB dummy file from ${DUMMY_DISK_FILE}. Disk space restored.`;
         await recordLog("disk-full", "stop", msg);
+        sendSnsIncidentReport("RESOLVED", "Disk Space Exhaustion (Disk Full)", "Disk space restored manually. 500MB dummy removed (Self-Healed 100%).");
         return NextResponse.json({ message: msg });
       }
     }
@@ -217,6 +256,7 @@ export async function POST(req: Request) {
       if (isStart) {
         const msg = "App Freeze Activated: /api/health returns 500 Unhealthy to trigger ALB Target Draining (Self-healing in 90s)";
         await recordLog("freeze", "start", msg, "Target Group will transition to Unhealthy. Self-heals in 90 seconds.");
+        sendSnsIncidentReport("TRIGGERED", "Application Freeze", msg);
 
         // Auto-recover after 90 seconds (Self-Healing simulation)
         global.__chaosFreezeTimeout = setTimeout(async () => {
@@ -230,6 +270,7 @@ export async function POST(req: Request) {
               "auto-end",
               "App Freeze simulation completed (90s elapsed). Container replacement / Health check self-healed back to 200 Healthy."
             );
+            sendSnsIncidentReport("RESOLVED", "Application Freeze", "App Freeze simulation completed (90s elapsed). Container replacement / Health check self-healed back to 200 Healthy (Self-Healed 100%).");
           } catch (err) {
             console.error("Failed to auto-heal app freeze:", err);
           }
@@ -239,6 +280,7 @@ export async function POST(req: Request) {
       } else {
         const msg = "App Freeze Deactivated manually: /api/health restored to 200 Healthy";
         await recordLog("freeze", "stop", msg);
+        sendSnsIncidentReport("RESOLVED", "Application Freeze", msg + " (Self-Healed 100%).");
         return NextResponse.json({ message: msg });
       }
     }
@@ -279,6 +321,7 @@ export async function POST(req: Request) {
 
         const msg = `Website Defacement Activated (CloudFront Failover simulated${canaryDispatched ? ", Guard Bot Dispatched" : ""}, Auto-rollback in 90s)`;
         await recordLog("deface", "start", msg, "CloudFront will failover to S3. Auto-rollback in 90 seconds.");
+        sendSnsIncidentReport("TRIGGERED", "Website Defacement", msg);
 
         // Auto-recover after 90 seconds (Simulate Canary Guard Bot auto-rollback)
         global.__chaosDefaceTimeout = setTimeout(async () => {
@@ -292,6 +335,7 @@ export async function POST(req: Request) {
               "auto-end",
               "Website Defacement resolved automatically (90s elapsed). Canary Guard Bot & CloudFront Origin restored to healthy state."
             );
+            sendSnsIncidentReport("RESOLVED", "Website Defacement", "Website Defacement resolved automatically (90s elapsed). Canary Guard Bot & CloudFront Origin restored to healthy state (Self-Healed 100%).");
           } catch (err) {
             console.error("Failed to auto-heal defacement:", err);
           }
@@ -301,6 +345,7 @@ export async function POST(req: Request) {
       } else {
         const msg = "Website Defacement Deactivated manually: System normal";
         await recordLog("deface", "stop", msg);
+        sendSnsIncidentReport("RESOLVED", "Website Defacement", msg + " (Self-Healed 100%).");
         return NextResponse.json({ message: msg });
       }
     }
