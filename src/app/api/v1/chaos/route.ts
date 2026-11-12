@@ -11,6 +11,9 @@ export const dynamic = 'force-dynamic';
 declare global {
   var __chaosCpuWorkers: Worker[] | undefined;
   var __chaosCpuTimeout: NodeJS.Timeout | undefined;
+  var __chaosFreezeTimeout: NodeJS.Timeout | undefined;
+  var __chaosDiskTimeout: NodeJS.Timeout | undefined;
+  var __chaosDefaceTimeout: NodeJS.Timeout | undefined;
 }
 
 const DUMMY_DISK_FILE = path.join(os.tmpdir(), "chaos-dummy.log");
@@ -128,6 +131,11 @@ export async function POST(req: Request) {
 
     // 2. DISK FULL SCENARIO
     if (type === "disk-full") {
+      if (global.__chaosDiskTimeout) {
+        clearTimeout(global.__chaosDiskTimeout);
+        global.__chaosDiskTimeout = undefined;
+      }
+
       if (action === "start") {
         try {
           // Create a 500MB dummy file fast using fs.openSync + write
@@ -148,8 +156,29 @@ export async function POST(req: Request) {
           data: { isDiskFull: true }
         });
 
-        const msg = `Allocated 500MB dummy file at ${DUMMY_DISK_FILE} to test SSM Auto-Remediation`;
+        const msg = `Allocated 500MB dummy file at ${DUMMY_DISK_FILE} to test SSM Auto-Remediation (Auto-heals in 90s)`;
         await recordLog("disk-full", "start", msg, `File: ${DUMMY_DISK_FILE}, Size: 500MB`);
+
+        // Auto-heal after 90 seconds (Simulate SSM Runbook disk purge)
+        global.__chaosDiskTimeout = setTimeout(async () => {
+          try {
+            if (fs.existsSync(DUMMY_DISK_FILE)) {
+              fs.unlinkSync(DUMMY_DISK_FILE);
+            }
+            await prisma.chaosState.update({
+              where: { id: "global" },
+              data: { isDiskFull: false }
+            });
+            await recordLog(
+              "disk-full",
+              "auto-end",
+              "Disk Full simulation resolved automatically (90s elapsed). AWS Systems Manager (SSM) Auto-Remediation runbook completed: Purged 500MB dummy log."
+            );
+          } catch (err) {
+            console.error("Failed to auto-heal disk-full:", err);
+          }
+        }, 90000);
+
         return NextResponse.json({ message: msg });
       } else {
         try {
@@ -174,52 +203,106 @@ export async function POST(req: Request) {
     // 3. APP FREEZE SCENARIO
     if (type === "freeze") {
       const isStart = action === "start";
+
+      if (global.__chaosFreezeTimeout) {
+        clearTimeout(global.__chaosFreezeTimeout);
+        global.__chaosFreezeTimeout = undefined;
+      }
+
       await prisma.chaosState.update({
         where: { id: "global" },
         data: { isAppFrozen: isStart }
       });
 
-      const msg = isStart
-        ? "App Freeze Activated: /api/health now returns 500 Unhealthy to trigger ALB Target Draining"
-        : "App Freeze Deactivated: /api/health restored to 200 Healthy";
-      
-      await recordLog("freeze", isStart ? "start" : "stop", msg);
-      return NextResponse.json({ message: msg });
+      if (isStart) {
+        const msg = "App Freeze Activated: /api/health returns 500 Unhealthy to trigger ALB Target Draining (Self-healing in 90s)";
+        await recordLog("freeze", "start", msg, "Target Group will transition to Unhealthy. Self-heals in 90 seconds.");
+
+        // Auto-recover after 90 seconds (Self-Healing simulation)
+        global.__chaosFreezeTimeout = setTimeout(async () => {
+          try {
+            await prisma.chaosState.update({
+              where: { id: "global" },
+              data: { isAppFrozen: false }
+            });
+            await recordLog(
+              "freeze",
+              "auto-end",
+              "App Freeze simulation completed (90s elapsed). Container replacement / Health check self-healed back to 200 Healthy."
+            );
+          } catch (err) {
+            console.error("Failed to auto-heal app freeze:", err);
+          }
+        }, 90000);
+
+        return NextResponse.json({ message: msg });
+      } else {
+        const msg = "App Freeze Deactivated manually: /api/health restored to 200 Healthy";
+        await recordLog("freeze", "stop", msg);
+        return NextResponse.json({ message: msg });
+      }
     }
 
     // 4. WEBSITE DEFACEMENT SCENARIO
     if (type === "deface") {
       const isStart = action === "start";
+
+      if (global.__chaosDefaceTimeout) {
+        clearTimeout(global.__chaosDefaceTimeout);
+        global.__chaosDefaceTimeout = undefined;
+      }
+
       await prisma.chaosState.update({
         where: { id: "global" },
         data: { isDefaced: isStart }
       });
 
-      // On-Demand Chaos: Dispatch Canary Guard Bot
-      let canaryDispatched = false;
-      if (isStart && process.env.TRIGGER_CANARY_URL) {
-        try {
-          fetch(process.env.TRIGGER_CANARY_URL, { method: "POST" })
-            .then(async (res) => {
-              if (res.ok) {
-                await recordLog("deface", "info", "Canary Guard Bot dispatched and verified detection of incident");
-              }
-            })
-            .catch((err) => {
-              console.warn("Trigger canary call failed:", err.message);
-            });
-          canaryDispatched = true;
-        } catch (err: any) {
-          console.warn("Trigger canary exception:", err.message);
+      if (isStart) {
+        // On-Demand Chaos: Dispatch Canary Guard Bot
+        let canaryDispatched = false;
+        if (process.env.TRIGGER_CANARY_URL) {
+          try {
+            fetch(process.env.TRIGGER_CANARY_URL, { method: "POST" })
+              .then(async (res) => {
+                if (res.ok) {
+                  await recordLog("deface", "info", "Canary Guard Bot dispatched and verified incident detection");
+                }
+              })
+              .catch((err) => {
+                console.warn("Trigger canary call failed:", err.message);
+              });
+            canaryDispatched = true;
+          } catch (err: any) {
+            console.warn("Trigger canary exception:", err.message);
+          }
         }
+
+        const msg = `Website Defacement Activated (CloudFront Failover simulated${canaryDispatched ? ", Guard Bot Dispatched" : ""}, Auto-rollback in 90s)`;
+        await recordLog("deface", "start", msg, "CloudFront will failover to S3. Auto-rollback in 90 seconds.");
+
+        // Auto-recover after 90 seconds (Simulate Canary Guard Bot auto-rollback)
+        global.__chaosDefaceTimeout = setTimeout(async () => {
+          try {
+            await prisma.chaosState.update({
+              where: { id: "global" },
+              data: { isDefaced: false }
+            });
+            await recordLog(
+              "deface",
+              "auto-end",
+              "Website Defacement resolved automatically (90s elapsed). Canary Guard Bot & CloudFront Origin restored to healthy state."
+            );
+          } catch (err) {
+            console.error("Failed to auto-heal defacement:", err);
+          }
+        }, 90000);
+
+        return NextResponse.json({ message: msg });
+      } else {
+        const msg = "Website Defacement Deactivated manually: System normal";
+        await recordLog("deface", "stop", msg);
+        return NextResponse.json({ message: msg });
       }
-
-      const msg = isStart
-        ? `Website Defacement Activated (CloudFront Failover simulated${canaryDispatched ? ", Guard Bot Dispatched" : ""})`
-        : "Website Defacement Deactivated: System normal";
-
-      await recordLog("deface", isStart ? "start" : "stop", msg);
-      return NextResponse.json({ message: msg });
     }
 
     return NextResponse.json({ error: "Unknown chaos type" }, { status: 400 });
