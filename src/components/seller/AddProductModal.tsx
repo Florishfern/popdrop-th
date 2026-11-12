@@ -27,6 +27,11 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, onError }:
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
+  // Minimum selectable date/time is current time in YYYY-MM-DDTHH:MM format
+  const currentDatetimeLocal = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
+    .toISOString()
+    .slice(0, 16);
+
   if (!isOpen) return null;
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -42,6 +47,20 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, onError }:
     e.preventDefault();
     if (!title || !price || !endTime || !startTime) {
       onError("Please fill in Product Title, Starting Bid, Start Time, and End Time.");
+      return;
+    }
+
+    const nowTime = new Date();
+    const parsedStart = new Date(startTime);
+    const parsedEnd = new Date(endTime);
+
+    if (parsedStart.getTime() < nowTime.getTime() - 2 * 60 * 1000) {
+      onError("วันและเวลาเริ่มประมูลต้องไม่เป็นอดีต (ไม่สามารถเลือกวันที่ผ่านมาแล้วได้)");
+      return;
+    }
+
+    if (parsedEnd <= parsedStart) {
+      onError("วันและเวลาสิ้นสุดประมูลต้องอยู่หลังเวลาเริ่มประมูล");
       return;
     }
 
@@ -156,6 +175,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, onError }:
               <label className="block text-sm font-bold text-neutral-700 mb-2">เวลาเริ่มประมูล (Start Time)</label>
               <input
                 type="datetime-local"
+                min={currentDatetimeLocal}
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
                 className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl px-5 py-4 text-base text-black outline-none focus:border-black focus:bg-white transition-all"
@@ -167,6 +187,7 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, onError }:
               <label className="block text-sm font-bold text-neutral-700 mb-2">วันสิ้นสุดประมูล (End Time)</label>
               <input
                 type="datetime-local"
+                min={startTime || currentDatetimeLocal}
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
                 className="w-full bg-neutral-50 border border-neutral-200 rounded-2xl px-5 py-4 text-base text-black outline-none focus:border-black focus:bg-white transition-all"

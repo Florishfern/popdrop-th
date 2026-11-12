@@ -24,6 +24,22 @@ export async function POST(req: Request) {
     const parsedStartTime = new Date(startTime);
     const parsedEndTime = new Date(endTime);
 
+    const now = new Date();
+    // Allow 2 minutes grace period for network latency / request flight
+    if (parsedStartTime.getTime() < now.getTime() - 2 * 60 * 1000) {
+      return NextResponse.json(
+        { error: "Start time cannot be in the past" },
+        { status: 400 }
+      );
+    }
+
+    if (parsedEndTime <= parsedStartTime) {
+      return NextResponse.json(
+        { error: "End time must be after start time" },
+        { status: 400 }
+      );
+    }
+
     // Fetch user and seller info to verify prerequisites
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },

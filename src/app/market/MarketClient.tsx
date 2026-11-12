@@ -14,6 +14,7 @@ function MarketplaceContent() {
   const initialSearch = searchParams.get("search") || "";
   const initialCategory = searchParams.get("category") || "All Product";
   const initialSort = searchParams.get("sort") || "popular";
+  const isLiveParam = searchParams.get("filter") === "live" || searchParams.get("isLive") === "true";
 
   // State
   const [products, setProducts] = useState<Product[]>([]);
@@ -24,6 +25,7 @@ function MarketplaceContent() {
   const [searchTerm, setSearchTerm] = useState(initialSearch);
   const [category, setCategory] = useState(initialCategory);
   const [sortOption, setSortOption] = useState(initialSort);
+  const [isLiveOnly, setIsLiveOnly] = useState(isLiveParam);
 
   const categories = ["All Product", "Art Toy", "Trading Card", "Model"];
 
@@ -50,7 +52,15 @@ function MarketplaceContent() {
     return prodCat.includes(selCat);
   };
 
-  const displayedProducts = products.filter((p) => isCategoryMatch(p.category, category));
+  const displayedProducts = products.filter((p) => {
+    const matchesCat = isCategoryMatch(p.category, category);
+    if (!matchesCat) return false;
+    if (isLiveOnly) {
+      const isLive = (p.status === "LIVE" || p.status === "ACTIVE") && new Date(p.endTime) > new Date();
+      return isLive;
+    }
+    return true;
+  });
 
   // Update URL params when filters change
   const updateUrlParams = useCallback(
@@ -69,8 +79,13 @@ function MarketplaceContent() {
     [searchParams, router]
   );
 
-  const fetchProductsFromApi = useCallback(async () => {
-    // Only set main loading if we have no products yet
+  const fetchProductsFromApi = useCallback(async (
+    targetSearch = searchTerm,
+    targetCategory = category,
+    targetSort = sortOption,
+    targetLive = isLiveOnly
+  ) => {
+    // Only set full loading if initial load, otherwise smooth filtering
     if (products.length === 0) setLoading(true);
     else setIsFiltering(true);
     
@@ -78,9 +93,10 @@ function MarketplaceContent() {
 
     try {
       const queryParams = new URLSearchParams();
-      if (searchTerm) queryParams.set("search", searchTerm);
-      if (category !== "All Product") queryParams.set("category", category);
-      if (sortOption) queryParams.set("sort", sortOption);
+      if (targetSearch) queryParams.set("search", targetSearch);
+      if (targetCategory && targetCategory !== "All Product") queryParams.set("category", targetCategory);
+      if (targetSort && targetSort !== "popular") queryParams.set("sort", targetSort);
+      if (targetLive) queryParams.set("isLive", "true");
 
       const res = await fetch(`/api/v1/products?${queryParams.toString()}`);
       if (!res.ok) {
@@ -95,19 +111,25 @@ function MarketplaceContent() {
       setLoading(false);
       setIsFiltering(false);
     }
-  }, [searchTerm, category, sortOption, products.length]);
+  }, [searchTerm, category, sortOption, isLiveOnly, products.length]);
 
   // Sync state from URL when URL searchParams change
   useEffect(() => {
-    setSearchTerm(searchParams.get("search") || "");
-    setCategory(searchParams.get("category") || "All Product");
-    setSortOption(searchParams.get("sort") || "popular");
+    const newSearch = searchParams.get("search") || "";
+    const newCat = searchParams.get("category") || "All Product";
+    const newSort = searchParams.get("sort") || "popular";
+    const newLive = searchParams.get("filter") === "live" || searchParams.get("isLive") === "true";
+    
+    setSearchTerm(newSearch);
+    setCategory(newCat);
+    setSortOption(newSort);
+    setIsLiveOnly(newLive);
   }, [searchParams]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchProductsFromApi();
-    }, 300);
+    }, 200);
     return () => clearTimeout(timer);
   }, [fetchProductsFromApi]);
 
@@ -118,23 +140,29 @@ function MarketplaceContent() {
 
   const handleCategoryChange = (cat: string) => {
     setCategory(cat);
+    setIsFiltering(true);
     updateUrlParams({ category: cat });
+    fetchProductsFromApi(searchTerm, cat, sortOption, isLiveOnly);
   };
 
   const handleSortChange = (val: string) => {
     setSortOption(val);
+    setIsFiltering(true);
     updateUrlParams({ sort: val });
+    fetchProductsFromApi(searchTerm, category, val, isLiveOnly);
   };
 
   const clearAllFilters = () => {
     setSearchTerm("");
     setCategory("All Product");
     setSortOption("popular");
+    setIsLiveOnly(false);
     router.replace("/market", { scroll: false });
+    fetchProductsFromApi("", "All Product", "popular", false);
   };
 
   const hasActiveFilters = Boolean(
-    searchTerm || category !== "All Product" || sortOption !== "popular"
+    searchTerm || category !== "All Product" || sortOption !== "popular" || isLiveOnly
   );
 
   return (
@@ -237,6 +265,23 @@ function MarketplaceContent() {
             </span>
           )}
 
+          {isLiveOnly && (
+            <span className="inline-flex items-center gap-1.5 bg-red-500 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+              Live Auction
+              <button 
+                onClick={() => {
+                  setIsLiveOnly(false);
+                  updateUrlParams({ filter: null, isLive: null });
+                  fetchProductsFromApi(searchTerm, category, sortOption, false);
+                }} 
+                className="hover:text-red-200"
+              >
+                <X size={12} />
+              </button>
+            </span>
+          )}
+
           <button
             onClick={clearAllFilters}
             className="text-xs font-bold text-red-600 hover:underline ml-auto px-2 py-1"
@@ -248,7 +293,7 @@ function MarketplaceContent() {
 
       {/* Main Grid */}
       <div className="w-full min-h-[500px]">
-        {loading ? (
+        {loading || (isFiltering && displayedProducts.length === 0) ? (
           /* Skeleton Loading Grid */
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -270,7 +315,7 @@ function MarketplaceContent() {
             <p className="text-base font-bold text-red-900 mb-1">{error}</p>
             <p className="text-xs text-red-600 mb-6">Failed to retrieve items from backend server.</p>
             <button
-              onClick={fetchProductsFromApi}
+              onClick={() => fetchProductsFromApi()}
               className="flex items-center gap-2 bg-red-600 text-white px-5 py-2.5 rounded-full text-xs font-bold hover:bg-red-700 transition-colors"
             >
               <RefreshCw size={14} /> Try Again

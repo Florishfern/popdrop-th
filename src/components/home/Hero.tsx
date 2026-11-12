@@ -11,8 +11,8 @@ export default function Hero() {
       <div className="w-full lg:w-1/2 flex flex-col items-start z-10">
         
         {/* Content */}
-        <h1 className="animate-fade-up-delay-1 font-sans font-bold lowercase leading-[1.05] tracking-tight text-black text-[clamp(2.5rem,6vw,5rem)]">
-          never miss a<br />rare drop
+        <h1 className="animate-fade-up-delay-1 font-sans font-bold leading-[1.05] tracking-tight text-black text-[clamp(2.5rem,6vw,5rem)]">
+          Never miss a<br />rare drop
         </h1>
 
         <p className="animate-fade-up-delay-2 text-neutral-500 text-sm sm:text-base font-sans leading-relaxed max-w-md lowercase mt-4 sm:mt-6">

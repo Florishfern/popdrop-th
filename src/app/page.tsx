@@ -2,15 +2,21 @@ import Navbar from "@/components/layout/Navbar";
 import Hero from "@/components/home/Hero";
 import ProductCard from "@/components/product/ProductCard";
 import FeaturedCategories from "@/components/home/FeaturedCategories";
-import TopSellerSection from "@/components/home/TopSellerSection";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 export const dynamic = 'force-dynamic';
 
 async function getProductsForHome() {
+  const now = new Date();
   const products = await prisma.product.findMany({
-    where: { status: { not: "DRAFT" } },
+    where: { 
+      status: { notIn: ["DRAFT", "SOLD", "ENDED"] },
+      startTime: { lte: now },
+      endTime: { gt: now }
+    },
     orderBy: { createdAt: 'desc' },
     take: 8,
     include: {
@@ -64,6 +70,14 @@ export default async function Home() {
               Live Auction
             </h2>
           </div>
+
+          <Link
+            href="/market?filter=live"
+            className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-neutral-600 hover:text-black transition-colors bg-white hover:bg-neutral-100 border border-neutral-200 px-4 py-2 rounded-full shadow-sm"
+          >
+            <span>ดูเพิ่มเติม</span>
+            <ArrowRight size={15} />
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8">
@@ -77,9 +91,6 @@ export default async function Home() {
 
       {/* Featured Categories Section */}
       <FeaturedCategories />
-      
-      {/* Top Seller Section */}
-      <TopSellerSection />
     </main>
   );
 }

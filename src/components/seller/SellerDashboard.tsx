@@ -139,6 +139,10 @@ export default function SellerDashboard() {
         return <span className="flex items-center gap-1.5 text-[var(--color-pop-red)] text-xs font-bold"><Clock size={14} /> Pending</span>;
       case "In Progress":
         return <span className="flex items-center gap-1.5 text-yellow-600 text-xs font-bold"><PackageCheck size={14} /> In Progress</span>;
+      case "Live":
+        return <span className="flex items-center gap-1.5 text-emerald-500 text-xs font-bold"><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Live</span>;
+      case "Ended":
+        return <span className="flex items-center gap-1.5 text-neutral-500 text-xs font-bold">Ended</span>;
       default:
         return <span>{status}</span>;
     }
@@ -429,6 +433,14 @@ export default function SellerDashboard() {
                             <span className="text-xs font-mono font-bold text-black">{item.trackingNumber}</span>
                             <span className="text-[10px] text-neutral-400 font-medium">{item.carrier}</span>
                           </div>
+                        ) : item.status === "Live" ? (
+                          <span className="inline-flex items-center gap-1.5 text-xs text-neutral-400 font-medium bg-neutral-50 px-2.5 py-1 rounded-full border border-neutral-100">
+                            <Clock size={12} /> อยู่ระหว่างประมูล
+                          </span>
+                        ) : item.status === "Draft" ? (
+                          <span className="inline-flex items-center gap-1.5 text-xs text-neutral-400 font-medium bg-neutral-50 px-2.5 py-1 rounded-full border border-neutral-100">
+                            ยังไม่เริ่มประมูล
+                          </span>
                         ) : (
                           <button
                             onClick={() => setSelectedOrderForTracking(item)}
