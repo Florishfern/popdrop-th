@@ -15,15 +15,15 @@ export async function GET(req: Request) {
     const sort = searchParams.get("sort") || "popular";
     const isLive = searchParams.get("isLive") === "true";
     const page = Number(searchParams.get("page") || "1");
-    const limit = Number(searchParams.get("limit") || "12");
+    const limit = Math.min(Number(searchParams.get("limit") || "100"), 500);
     const skip = (page - 1) * limit;
 
-
-
-    // Build the Prisma conditions dynamically
+    // Build the Prisma conditions dynamically:
+    // Strictly exclude draft, sold, ended products and any product whose endTime has already passed
+    const now = new Date();
     const conditions: any[] = [
-      { status: { notIn: ["DRAFT", "SOLD", "ENDED"] } },
-      { endTime: { gt: new Date() } }
+      { status: { notIn: ["DRAFT", "SOLD", "ENDED", "draft", "sold", "ended"] } },
+      { endTime: { gt: now } }
     ];
 
     if (search) {
@@ -37,8 +37,9 @@ export async function GET(req: Request) {
 
     if (isLive) {
       conditions.push({
-        status: "LIVE",
-        endTime: { gt: new Date() }
+        status: { in: ["LIVE", "ACTIVE", "Live Auction"] },
+        startTime: { lte: now },
+        endTime: { gt: now }
       });
     }
 
@@ -95,8 +96,11 @@ export async function GET(req: Request) {
     } else if (sort === "price_desc") {
       orderBy = { currentPrice: 'desc' };
     } else if (sort === "popular") {
-      // Mock popular by sorting by highest bids or something, for now just desc by price
       orderBy = { currentPrice: 'desc' }; 
+    } else if (sort === "newest") {
+      orderBy = { createdAt: 'desc' };
+    } else if (sort === "live_bidding") {
+      orderBy = [{ status: 'asc' }, { endTime: 'asc' }];
     }
 
     // Run count and findMany in a transaction for pagination

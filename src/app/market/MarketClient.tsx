@@ -35,28 +35,50 @@ function MarketplaceContent() {
     const selCat = sCat.toLowerCase().trim();
 
     if (selCat === "art toy" || selCat === "toy") {
-      if (prodCat.includes("card") || prodCat.includes("pokemon") || prodCat.includes("lorcana") || prodCat === "model") {
+      if (prodCat.includes("card") || prodCat.includes("pokemon") || prodCat.includes("lorcana") || prodCat.includes("model")) {
         return false;
       }
-      return prodCat.includes("art toy") || prodCat.includes("toy") || prodCat.includes("blind box") || prodCat.includes("hirono");
+      return (
+        prodCat.includes("art toy") ||
+        prodCat.includes("toy") ||
+        prodCat.includes("blind box") ||
+        prodCat.includes("hirono") ||
+        prodCat.includes("molly") ||
+        prodCat.includes("pop mart")
+      );
     }
 
     if (selCat === "trading card" || selCat === "card") {
-      return prodCat.includes("card") || prodCat.includes("pokemon") || prodCat.includes("lorcana");
+      return prodCat.includes("card") || prodCat.includes("pokemon") || prodCat.includes("lorcana") || prodCat.includes("tcg");
     }
 
     if (selCat === "model") {
-      return prodCat.includes("model") || prodCat.includes("gundam") || prodCat.includes("figure");
+      return prodCat.includes("model") || prodCat.includes("gundam") || prodCat.includes("figure") || prodCat.includes("gunpla");
     }
 
     return prodCat.includes(selCat);
   };
 
   const displayedProducts = products.filter((p) => {
+    // 1. Strictly exclude products whose auction has ended or sold, or endTime has passed
+    const now = new Date();
+    const isEnded =
+      p.status === "ENDED" ||
+      p.status === "SOLD" ||
+      (p.endTime && new Date(p.endTime) <= now);
+    if (isEnded) return false;
+
+    // 2. Category matching
     const matchesCat = isCategoryMatch(p.category, category);
     if (!matchesCat) return false;
+
+    // 3. Live only filter
     if (isLiveOnly) {
-      const isLive = (p.status === "LIVE" || p.status === "ACTIVE") && new Date(p.endTime) > new Date();
+      const startTime = p.startTime ? new Date(p.startTime) : now;
+      const isLive =
+        (p.status === "LIVE" || p.status === "ACTIVE" || p.status === "Live Auction") &&
+        now >= startTime &&
+        new Date(p.endTime) > now;
       return isLive;
     }
     return true;
@@ -93,6 +115,7 @@ function MarketplaceContent() {
 
     try {
       const queryParams = new URLSearchParams();
+      queryParams.set("limit", "100");
       if (targetSearch) queryParams.set("search", targetSearch);
       if (targetCategory && targetCategory !== "All Product") queryParams.set("category", targetCategory);
       if (targetSort && targetSort !== "popular") queryParams.set("sort", targetSort);
