@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
+import { headers } from "next/headers";
 import prisma from "@/lib/prisma";
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-jakarta",
@@ -32,8 +33,21 @@ export default async function RootLayout({
     // Ignore DB errors during layout render
   }
 
-  // To trigger CloudFront Origin Failover (500 Error), we must throw an error when hacked.
-  if (isDefaced) {
+  // Check if current route is admin or API
+  let isAdminOrApi = false;
+  try {
+    const headersList = await headers();
+    const pathname = headersList.get("x-pathname") || "";
+    if (pathname.startsWith("/admin") || pathname.startsWith("/api")) {
+      isAdminOrApi = true;
+    }
+  } catch {
+    // Ignore header resolution errors
+  }
+
+  // To trigger CloudFront Origin Failover (500 Error), we throw an error when hacked on public pages.
+  // Allow /admin and /api to pass through so SREs can control the chaos console!
+  if (isDefaced && !isAdminOrApi) {
     throw new Error("SYSTEM_HACKED");
   }
 

@@ -271,5 +271,18 @@ model ChaosState {
   id             String    @id @default("global")
   isAppFrozen    Boolean   @default(false)
   isDefaced      Boolean   @default(false)
+  isCpuBurning   Boolean   @default(false)
+  isDiskFull     Boolean   @default(false)
   updatedAt      DateTime  @updatedAt
+}
+
+model ChaosEventLog {
+  id        String   @id @default(cuid())
+  type      String   // cpu, freeze, disk-full, deface, recovery, system
+  action    String   // start, stop, error, auto-end, info
+  message   String
+  details   String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
 }
