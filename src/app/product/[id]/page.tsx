@@ -229,7 +229,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
                 glarePosition="all"
                 className="w-full max-w-[400px] aspect-[3/4] relative rounded-xl shadow-2xl"
               >
-                <Image src={product.imageUrl} alt={product.title} fill className="object-cover rounded-xl" priority />
+                <Image src={product.imageUrl} alt={product.title} fill sizes="(max-width: 768px) 100vw, 400px" className="object-cover rounded-xl" priority />
               </Tilt>
             ) : has3DModel ? (
               <div className="w-full h-[500px] rounded-xl overflow-hidden cursor-grab active:cursor-grabbing">
@@ -237,7 +237,7 @@ export default function ProductDetail({ params }: { params: Promise<{ id: string
               </div>
             ) : (
               <div className="relative w-full max-w-[500px] aspect-square animate-float">
-                <Image src={product.imageUrl} alt={product.title} fill className="object-contain drop-shadow-2xl" priority />
+                <Image src={product.imageUrl} alt={product.title} fill sizes="(max-width: 768px) 100vw, 500px" className="object-contain drop-shadow-2xl" priority />
               </div>
             )}
           </div>

@@ -211,6 +211,7 @@ export default function FeaturedCategories() {
                     src={currentCategory.image} 
                     alt={currentCategory.name} 
                     fill 
+                    sizes="(max-width: 768px) 300px, 450px"
                     draggable={false}
                     className={`object-contain transform transition-transform duration-500 pointer-events-none ${currentCategory.scale}`}
                   />
@@ -265,7 +266,7 @@ export default function FeaturedCategories() {
                 currentIndex === idx ? "border-[var(--color-pop-red)]" : "border-transparent"
               }`}>
                 <div className="relative w-full h-full">
-                  <Image src={cat.image} alt={cat.name} fill className="object-contain drop-shadow-md" />
+                  <Image src={cat.image} alt={cat.name} fill sizes="96px" className="object-contain drop-shadow-md" />
                 </div>
               </div>
               <span className="font-bold text-black text-xs sm:text-sm uppercase tracking-wide">{cat.name}</span>

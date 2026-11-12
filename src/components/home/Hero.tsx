@@ -37,7 +37,7 @@ export default function Hero() {
             className="absolute z-10 hover:z-50 transition-all duration-300 -translate-x-24 sm:-translate-x-36 lg:-translate-x-44"
           >
             <div className="relative w-[160px] sm:w-[250px] lg:w-[300px] aspect-[3/4] hover:rotate-0 hover:scale-110 transition-all duration-300 cursor-pointer rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-black/10">
-              <Image src="/images/mickey_card.avif" alt="Mickey Card" fill className="object-cover" />
+              <Image src="/images/mickey_card.avif" alt="Mickey Card" fill priority sizes="(max-width: 768px) 160px, (max-width: 1024px) 250px, 300px" className="object-cover" />
             </div>
           </motion.div>
 
@@ -48,7 +48,7 @@ export default function Hero() {
             className="absolute z-20 hover:z-50 transition-all duration-300 translate-x-0"
           >
             <div className="relative w-[160px] sm:w-[250px] lg:w-[300px] aspect-[3/4] hover:scale-110 transition-all duration-300 cursor-pointer rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-black/10">
-              <Image src="/images/buzz.avif" alt="Buzz Model" fill className="object-cover" priority />
+              <Image src="/images/buzz.avif" alt="Buzz Model" fill priority sizes="(max-width: 768px) 160px, (max-width: 1024px) 250px, 300px" className="object-cover" />
             </div>
           </motion.div>
 
@@ -59,7 +59,7 @@ export default function Hero() {
             className="absolute z-30 hover:z-50 transition-all duration-300 translate-x-24 sm:translate-x-36 lg:translate-x-44"
           >
             <div className="relative w-[160px] sm:w-[250px] lg:w-[300px] aspect-[3/4] hover:rotate-0 hover:scale-110 transition-all duration-300 cursor-pointer rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-black/10">
-              <Image src="/images/elsa.avif" alt="Elsa Art Toy" fill className="object-cover" />
+              <Image src="/images/elsa.avif" alt="Elsa Art Toy" fill priority sizes="(max-width: 768px) 160px, (max-width: 1024px) 250px, 300px" className="object-cover" />
             </div>
           </motion.div>
 

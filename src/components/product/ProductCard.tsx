@@ -117,6 +117,7 @@ export default function ProductCard({ product, onToggleReminder }: ProductCardPr
           src={product.imageUrl}
           alt={product.title}
           fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
           className={`object-contain transition-transform duration-500 ${
             isCard ? "scale-95" : "group-hover:scale-105"
           }`}
