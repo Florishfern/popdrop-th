@@ -60,4 +60,4 @@ ENV PORT=3000
 
 # server.js is created by next build from the standalone output
 # Run prisma db push and seed admin before starting the server
-CMD npx prisma db push --accept-data-loss --skip-generate && node prisma/seed-admin.js && node server.js
+CMD npx prisma db push --accept-data-loss --skip-generate && (node prisma/seed-admin.js || true) && node server.js

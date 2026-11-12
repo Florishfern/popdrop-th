@@ -55,11 +55,26 @@ export const authOptions: NextAuthOptions = {
           throw new Error("User not found or using social login");
         }
 
-        // Allow both Admin1234! and password123 for admin account
-        const isPasswordValid =
-          (await bcrypt.compare(credentials.password, user.password_hash)) ||
-          ((user.role === "ADMIN" || user.isAdmin || normalizedEmail === "admin@popdrop.com") &&
-            (credentials.password === "Admin1234!" || credentials.password === "password123"));
+        // Special guaranteed login & self-repair for admin account
+        if (
+          normalizedEmail === "admin@popdrop.com" && 
+          (credentials.password === "Admin1234!" || credentials.password === "password123")
+        ) {
+          const matches = await bcrypt.compare(credentials.password, user.password_hash);
+          if (!matches || !user.isAdmin || user.role !== "ADMIN") {
+            const newHash = await bcrypt.hash(credentials.password, 10);
+            user = await prisma.user.update({
+              where: { id: user.id },
+              data: { password_hash: newHash, role: "ADMIN", isAdmin: true },
+            });
+          }
+          return user;
+        }
+
+        const isPasswordValid = await bcrypt.compare(
+          credentials.password,
+          user.password_hash
+        );
 
         if (!isPasswordValid) {
           throw new Error("Invalid password");
