@@ -93,17 +93,67 @@ export default function Navbar() {
     }
   };
 
-  const markAsRead = async (id: string, link: string | null) => {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
+  const resolveNotificationUrl = (notif: NotificationItem): string => {
+    const title = notif.title || "";
+    const type = notif.type || "";
+    const rawLink = notif.link || "";
+
+    // 1. Won Auction -> /bidding?tab=won
+    if (type === "WON" || title.includes("ชนะการประมูล")) {
+      return "/bidding?tab=won";
+    }
+
+    // 2. Sold / Seller orders / Seller item sold / Ended with no bids -> /seller
+    if (
+      type === "SOLD" ||
+      title.includes("ถูกขายแล้ว") ||
+      title.includes("ไม่มีผู้เสนอราคา") ||
+      rawLink.startsWith("/seller")
+    ) {
+      return "/seller";
+    }
+
+    // 3. Delivered or Shipped -> /transactions
+    if (
+      title.includes("จัดส่งสินค้าสำเร็จ") ||
+      title.includes("สินค้ากำลังจัดส่ง") ||
+      rawLink.startsWith("/transactions") ||
+      rawLink.startsWith("/transaction")
+    ) {
+      return "/transactions";
+    }
+
+    // 4. Verification / KYC -> /profile?tab=Verification
+    if (title.includes("ยืนยันตัวตน") || rawLink.includes("Verification")) {
+      return "/profile?tab=Verification";
+    }
+
+    // 5. Outbid or Reminder pointing to /market/<productId> -> convert to /product/<productId>
+    if (rawLink.startsWith("/market/")) {
+      const parts = rawLink.split("/market/");
+      if (parts[1]) {
+        return `/product/${parts[1]}`;
+      }
+    }
+
+    // 6. If rawLink is already a valid non-empty internal link
+    if (rawLink && rawLink !== "/" && !rawLink.startsWith("/seller/")) {
+      return rawLink;
+    }
+
+    return "/market";
+  };
+
+  const markAsRead = async (notif: NotificationItem) => {
+    setNotifications((prev) => prev.map((n) => (n.id === notif.id ? { ...n, isRead: true } : n)));
     try {
-      await fetch(`/api/v1/notifications/${id}/read`, { method: "PUT" });
+      await fetch(`/api/v1/notifications/${notif.id}/read`, { method: "PUT" });
     } catch (err) {
       console.error(err);
     }
-    if (link) {
-      router.push(link);
-      setNotificationsOpen(false);
-    }
+    const targetUrl = resolveNotificationUrl(notif);
+    router.push(targetUrl);
+    setNotificationsOpen(false);
   };
 
   const displayNotifications = viewAll ? notifications : notifications.slice(0, 4);
@@ -204,13 +254,14 @@ export default function Navbar() {
                   <div className={`overflow-y-auto transition-all duration-300 ${viewAll ? 'max-h-[60vh] sm:max-h-[500px]' : 'max-h-[400px]'}`}>
                     {displayNotifications.map((notif) => {
                       const style = getNotificationStyle(notif.type);
+                      const targetUrl = resolveNotificationUrl(notif);
                       return (
                         <Link 
                           key={notif.id} 
-                          href={notif.link || "/profile"}
+                          href={targetUrl}
                           onClick={(e) => {
                             e.preventDefault();
-                            markAsRead(notif.id, notif.link);
+                            markAsRead(notif);
                           }}
                           className={`flex gap-3 p-4 hover:bg-neutral-50 transition-colors border-b border-neutral-50 last:border-0 ${!notif.isRead ? 'bg-[var(--color-pop-red)]/5' : ''}`}
                         >

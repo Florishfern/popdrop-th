@@ -38,7 +38,7 @@ export async function POST(req: Request) {
       title: "ยืนยันตัวตนสำเร็จ",
       message: "เอกสารยืนยันตัวตนของคุณได้รับการอนุมัติเรียบร้อยแล้ว",
       type: "SUCCESS",
-      link: "/seller/profile",
+      link: "/profile?tab=Verification",
     });
 
     return NextResponse.json({

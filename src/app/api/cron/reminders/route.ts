@@ -39,7 +39,7 @@ export async function GET() {
           title: "สินค้าที่คุณสนใจกำลังจะเริ่มประมูล!",
           message: `การประมูลสำหรับสินค้า "${product.title}" กำลังจะเริ่มในอีกไม่ถึง 15 นาที!`,
           type: "INFO",
-          link: `/market/${product.id}`,
+          link: `/product/${product.id}`,
           imageUrl: product.images[0]?.imageUrl,
         });
 

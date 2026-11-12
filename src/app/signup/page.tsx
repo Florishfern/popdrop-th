@@ -1,13 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Mail, Lock, User, ArrowRight } from "lucide-react";
 
-export default function SignupPage() {
+function SignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackParam = searchParams.get("callbackUrl");
+  // Default to "/market" unless a specific valid non-home callbackUrl is provided
+  const targetUrl = callbackParam && callbackParam !== "/" ? callbackParam : "/market";
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -41,7 +46,7 @@ export default function SignupPage() {
       if (loginRes?.error) {
         setError("Account created, but failed to log in automatically.");
       } else {
-        router.push("/");
+        router.push(targetUrl);
         router.refresh();
       }
     } catch (err: unknown) {
@@ -52,11 +57,11 @@ export default function SignupPage() {
   };
 
   const handleGoogleSignIn = () => {
-    signIn("google", { callbackUrl: "/" });
+    signIn("google", { callbackUrl: targetUrl });
   };
 
   const handleFacebookSignIn = () => {
-    signIn("facebook", { callbackUrl: "/" });
+    signIn("facebook", { callbackUrl: targetUrl });
   };
 
   return (
@@ -130,7 +135,7 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center space-x-2 bg-[var(--color-pop-red)] hover:bg-[var(--color-pop-red-hover)] text-white py-3 px-4 rounded-xl font-semibold transition-all active:scale-[0.98] disabled:opacity-70"
+              className="w-full flex items-center justify-center space-x-2 bg-[var(--color-pop-red)] hover:bg-[var(--color-pop-red-hover)] text-white py-3 px-4 rounded-xl font-semibold transition-all active:scale-[0.98] disabled:opacity-70 cursor-pointer"
             >
               <span>{loading ? "Creating account..." : "Create Account"}</span>
               {!loading && <ArrowRight size={18} />}
@@ -150,14 +155,14 @@ export default function SignupPage() {
             <div className="mt-6 grid grid-cols-2 gap-3">
               <button
                 onClick={handleGoogleSignIn}
-                className="w-full flex items-center justify-center px-4 py-2 border border-gray-200 rounded-xl shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                className="w-full flex items-center justify-center px-4 py-2 border border-gray-200 rounded-xl shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
               >
                 <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="h-5 w-5 mr-2" />
                 Google
               </button>
               <button
                 onClick={handleFacebookSignIn}
-                className="w-full flex items-center justify-center px-4 py-2 border border-gray-200 rounded-xl shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                className="w-full flex items-center justify-center px-4 py-2 border border-gray-200 rounded-xl shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
               >
                 <img src="https://www.svgrepo.com/show/475647/facebook-color.svg" alt="Facebook" className="h-5 w-5 mr-2" />
                 Facebook
@@ -168,11 +173,22 @@ export default function SignupPage() {
         
         <div className="bg-gray-50 py-4 px-8 text-center text-sm">
           <span className="text-gray-500">Already have an account? </span>
-          <Link href="/login" className="text-[var(--color-pop-red)] font-semibold hover:underline">
+          <Link
+            href={`/login${callbackParam ? `?callbackUrl=${encodeURIComponent(callbackParam)}` : ""}`}
+            className="text-[var(--color-pop-red)] font-semibold hover:underline"
+          >
             Sign in
           </Link>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[var(--color-pop-bg)] text-sm text-neutral-400">Loading...</div>}>
+      <SignupForm />
+    </Suspense>
   );
 }

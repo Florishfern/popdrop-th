@@ -146,7 +146,7 @@ export async function POST(
         title: "มีผู้เสนอราคาสูงกว่าคุณ",
         message: `มีผู้เสนอราคาสูงกว่าคุณสำหรับสินค้า "${result.product.title}" เสนอราคาใหม่เพื่อเป็นผู้ชนะ!`,
         type: "OUTBID",
-        link: `/market/${productId}`,
+        link: `/product/${productId}`,
         imageUrl: result.product.images[0]?.imageUrl,
       });
     }

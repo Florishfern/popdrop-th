@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import ProductCard from "@/components/product/ProductCard";
 import { Product } from "@/types";
@@ -24,7 +25,20 @@ const steps: { key: TabKey; label: string }[] = [
 
 export default function BiddingClient() {
   const { data: session } = useSession();
-  const [activeTab, setActiveTab] = useState<TabKey>("upcoming");
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab")?.toLowerCase();
+
+  const [activeTab, setActiveTab] = useState<TabKey>(() => {
+    if (tabParam === "won") return "won";
+    if (tabParam === "live") return "live";
+    return "upcoming";
+  });
+
+  useEffect(() => {
+    if (tabParam === "won" || tabParam === "live" || tabParam === "upcoming") {
+      setActiveTab(tabParam as TabKey);
+    }
+  }, [tabParam]);
   const [upcomingItems, setUpcomingItems] = useState<BiddingItem[]>([]);
   const [liveItems, setLiveItems] = useState<BiddingItem[]>([]);
   const [wonItems, setWonItems] = useState<BiddingItem[]>([]);

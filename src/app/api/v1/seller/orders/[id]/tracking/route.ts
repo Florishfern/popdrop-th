@@ -59,7 +59,7 @@ export async function PUT(
       title: "สินค้ากำลังจัดส่ง",
       message: `สินค้า "${transaction.product.title}" ของคุณกำลังถูกจัดส่งโดย ${carrier} หมายเลขพัสดุ: ${trackingNumber}`,
       type: "INFO",
-      link: "/profile",
+      link: "/transactions",
     });
 
     return NextResponse.json({

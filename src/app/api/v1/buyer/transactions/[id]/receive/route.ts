@@ -51,7 +51,7 @@ export async function PUT(
       title: "จัดส่งสินค้าสำเร็จ",
       message: `ผู้ซื้อได้รับสินค้า "${transaction.product.title}" แล้ว (Order ID: ${transaction.id})`,
       type: "SUCCESS",
-      link: "/seller",
+      link: "/transactions",
     });
 
     // 2. Check if Seller has unlocked Top Seller Badge (e.g. 100 sales)
@@ -79,7 +79,7 @@ export async function PUT(
           title: "ยินดีด้วย!",
           message: "คุณทำการขายสำเร็จครบ 100 รายการ และได้รับ Seller Badge แล้ว!",
           type: "INFO",
-          link: "/seller/profile",
+          link: "/seller",
         });
       }
     }

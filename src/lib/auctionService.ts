@@ -54,7 +54,7 @@ export async function processEndedAuctions() {
           title: "คุณชนะการประมูล!",
           message: `ยินดีด้วย! คุณชนะการประมูลสินค้า "${product.title}" ในราคา ฿${winningBid.amount.toLocaleString()}`,
           type: "WON",
-          link: "/bidding",
+          link: "/bidding?tab=won",
           imageUrl,
         });
 
@@ -64,7 +64,7 @@ export async function processEndedAuctions() {
           title: "การประมูลสิ้นสุดลง - สินค้าของคุณถูกขายแล้ว!",
           message: `ยินดีด้วย! สินค้า "${product.title}" มีผู้ชนะการประมูลในราคา ฿${winningBid.amount.toLocaleString()}`,
           type: "SOLD",
-          link: "/seller/orders",
+          link: "/seller",
           imageUrl,
         });
 
@@ -103,7 +103,7 @@ export async function processEndedAuctions() {
           title: "การประมูลสิ้นสุดลง (ไม่มีผู้เสนอราคา)",
           message: `การประมูลสำหรับสินค้า "${product.title}" สิ้นสุดลงแล้วโดยไม่มีผู้เสนอราคา`,
           type: "INFO",
-          link: "/seller/products",
+          link: "/seller",
           imageUrl,
         });
 
@@ -156,7 +156,7 @@ export async function processEndedAuctions() {
           title: "การประมูลสิ้นสุดลง (ไม่มีผู้เสนอราคา)",
           message: `การประมูลสำหรับสินค้า "${prod.title}" สิ้นสุดลงแล้วโดยไม่มีผู้เสนอราคา`,
           type: "INFO",
-          link: "/seller/products",
+          link: "/seller",
           imageUrl: prod.images[0]?.imageUrl,
         });
       }
