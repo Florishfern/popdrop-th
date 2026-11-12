@@ -12,10 +12,8 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-    }),
-    FacebookProvider({
-      clientId: process.env.FACEBOOK_CLIENT_ID || "",
-      clientSecret: process.env.FACEBOOK_CLIENT_SECRET || "",
+      allowDangerousEmailAccountLinking: true,
+      checks: ["none"],
     }),
     CredentialsProvider({
       name: "Email and Password",
@@ -88,8 +86,18 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
   },
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      try {
+        if (new URL(url).origin === baseUrl) return url;
+      } catch {
+        // Invalid URL
+      }
+      return `${baseUrl}/market`;
+    },
     async jwt({ token, user, trigger, session }) {
       if (user) {
+        token.id = user.id;
         token.role = (user as any).role || ((user as any).isAdmin ? "ADMIN" : "USER");
         token.isAdmin = (user as any).isAdmin || (user as any).role === "ADMIN" || user.email === "admin@popdrop.com";
       }
@@ -112,10 +120,10 @@ export const authOptions: NextAuthOptions = {
           isAdmin: !!token.isAdmin || token.role === "ADMIN" || token.email === "admin@popdrop.com",
         } as any;
       }
-      if (session.user && token.sub) {
-        session.user.id = token.sub;
-      }
       if (session.user) {
+        if (token.id || token.sub) {
+          session.user.id = (token.id as string) || (token.sub as string) || session.user.id;
+        }
         session.user.name = (token.name as string) || session.user.name || "User";
         session.user.image = (token.picture as string) || session.user.image || "";
         session.user.role = (token.role as string) || (token.isAdmin ? "ADMIN" : "USER");
@@ -152,6 +160,26 @@ export const authOptions: NextAuthOptions = {
         sameSite: "lax",
         path: "/",
         secure: false,
+      },
+    },
+    state: {
+      name: "next-auth.state",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: false,
+        maxAge: 900,
+      },
+    },
+    pkceCodeVerifier: {
+      name: "next-auth.pkce.code_verifier",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: false,
+        maxAge: 900,
       },
     },
   },
