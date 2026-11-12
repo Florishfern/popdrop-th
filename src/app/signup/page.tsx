@@ -46,8 +46,8 @@ function SignupForm() {
       if (loginRes?.error) {
         setError("Account created, but failed to log in automatically.");
       } else {
-        router.push(targetUrl);
-        router.refresh();
+        // Full browser navigation guarantees session cookie synchronization across NextAuth SessionProvider & Navbar
+        window.location.href = targetUrl;
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "An unexpected error occurred");

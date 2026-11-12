@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -233,9 +234,18 @@ export default function FeaturedCategories() {
                 <p className="text-neutral-700 text-sm sm:text-base leading-relaxed font-medium">
                   {currentCategory.description}
                 </p>
-                <button className="mt-4 text-[var(--color-pop-red)] font-bold text-sm hover:underline uppercase tracking-wider">
-                  View Collection
-                </button>
+                <Link
+                  href={`/market?category=${encodeURIComponent(
+                    currentCategory.id === "art-toy"
+                      ? "Art Toy"
+                      : currentCategory.id === "trading-card"
+                      ? "Trading Card"
+                      : "Model"
+                  )}`}
+                  className="inline-block mt-4 text-[var(--color-pop-red)] font-bold text-sm hover:underline uppercase tracking-wider"
+                >
+                  View Collection &rarr;
+                </Link>
               </motion.div>
             </AnimatePresence>
           </div>

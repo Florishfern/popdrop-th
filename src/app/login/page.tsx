@@ -34,8 +34,8 @@ function LoginForm() {
       if (res?.error) {
         setError("Invalid email or password");
       } else {
-        router.push(targetUrl);
-        router.refresh();
+        // Full browser navigation guarantees session cookie synchronization across NextAuth SessionProvider & Navbar
+        window.location.href = targetUrl;
       }
     } catch (err) {
       setError("An unexpected error occurred");

@@ -27,6 +27,31 @@ function MarketplaceContent() {
 
   const categories = ["All Product", "Art Toy", "Trading Card", "Model"];
 
+  const isCategoryMatch = (pCat: string | undefined, sCat: string): boolean => {
+    if (!sCat || sCat === "All Product" || sCat.toLowerCase() === "all") return true;
+    const prodCat = (pCat || "").toLowerCase().trim();
+    const selCat = sCat.toLowerCase().trim();
+
+    if (selCat === "art toy" || selCat === "toy") {
+      if (prodCat.includes("card") || prodCat.includes("pokemon") || prodCat.includes("lorcana") || prodCat === "model") {
+        return false;
+      }
+      return prodCat.includes("art toy") || prodCat.includes("toy") || prodCat.includes("blind box") || prodCat.includes("hirono");
+    }
+
+    if (selCat === "trading card" || selCat === "card") {
+      return prodCat.includes("card") || prodCat.includes("pokemon") || prodCat.includes("lorcana");
+    }
+
+    if (selCat === "model") {
+      return prodCat.includes("model") || prodCat.includes("gundam") || prodCat.includes("figure");
+    }
+
+    return prodCat.includes(selCat);
+  };
+
+  const displayedProducts = products.filter((p) => isCategoryMatch(p.category, category));
+
   // Update URL params when filters change
   const updateUrlParams = useCallback(
     (newParams: Record<string, string | boolean | null>) => {
@@ -251,10 +276,10 @@ function MarketplaceContent() {
               <RefreshCw size={14} /> Try Again
             </button>
           </div>
-        ) : products.length > 0 ? (
+        ) : displayedProducts.length > 0 ? (
           /* Product Card Grid */
           <div className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 transition-opacity duration-300 ${isFiltering ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
-            {products.map((product) => (
+            {displayedProducts.map((product) => (
               <div key={product.id} className="h-full">
                 <ProductCard
                   product={product}

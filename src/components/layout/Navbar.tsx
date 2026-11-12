@@ -25,7 +25,7 @@ type NotificationItem = {
 };
 
 export default function Navbar() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const pathname = usePathname();
   const [searchQuery, setSearchQuery] = useState("");
@@ -304,9 +304,19 @@ export default function Navbar() {
           </div>
 
           {/* User Profile / Sign In */}
-          {session ? (
-            <Link href="/profile" className="w-10 h-10 rounded-full bg-black hover:bg-neutral-800 flex items-center justify-center text-white transition-all active:scale-95 shrink-0 shadow-sm">
-              <User size={18} />
+          {status === "loading" ? (
+            <div className="w-10 h-10 rounded-full bg-neutral-200 animate-pulse shrink-0" />
+          ) : session ? (
+            <Link 
+              href="/profile" 
+              className="w-10 h-10 rounded-full bg-black hover:bg-neutral-800 flex items-center justify-center text-white transition-all active:scale-95 shrink-0 shadow-sm overflow-hidden"
+              title={session.user?.name || "Profile"}
+            >
+              {session.user?.image ? (
+                <img src={session.user.image} alt={session.user?.name || "User"} className="w-full h-full object-cover" />
+              ) : (
+                <User size={18} />
+              )}
             </Link>
           ) : (
             <Link href={`/login?callbackUrl=${encodeURIComponent(pathname)}`} className="px-4 py-2 rounded-full bg-black hover:bg-neutral-800 text-white text-sm font-semibold transition-all active:scale-95 shrink-0 shadow-sm">
@@ -390,9 +400,15 @@ export default function Navbar() {
                     )}
                   </button>
                 </div>
-                {session ? (
-                  <Link href="/profile" onClick={() => setMenuOpen(false)} className="w-12 h-12 rounded-full bg-neutral-200 flex items-center justify-center text-black">
-                    <User size={24} />
+                {status === "loading" ? (
+                  <div className="w-12 h-12 rounded-full bg-neutral-200 animate-pulse shrink-0" />
+                ) : session ? (
+                  <Link href="/profile" onClick={() => setMenuOpen(false)} className="w-12 h-12 rounded-full bg-neutral-200 flex items-center justify-center text-black overflow-hidden">
+                    {session.user?.image ? (
+                      <img src={session.user.image} alt={session.user?.name || "User"} className="w-full h-full object-cover" />
+                    ) : (
+                      <User size={24} />
+                    )}
                   </Link>
                 ) : (
                   <Link href={`/login?callbackUrl=${encodeURIComponent(pathname)}`} onClick={() => setMenuOpen(false)} className="px-6 py-3 rounded-full bg-black text-white font-semibold">

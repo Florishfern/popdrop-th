@@ -11,29 +11,156 @@ export async function GET(req: Request) {
     const userId = session?.user?.id;
     const { searchParams } = new URL(req.url);
     const search = searchParams.get("search")?.toLowerCase() || "";
+    const category = searchParams.get("category");
     const sort = searchParams.get("sort") || "popular";
     const isLive = searchParams.get("isLive") === "true";
     const page = Number(searchParams.get("page") || "1");
     const limit = Number(searchParams.get("limit") || "12");
     const skip = (page - 1) * limit;
 
-    // Build the Prisma where clause dynamically
-    const whereClause: any = {
-      status: { notIn: ["DRAFT", "SOLD", "ENDED"] },
-      endTime: { gt: new Date() }
-    };
+    // Ensure baseline diversity in demo categories if DB only has Trading Cards or 1 category
+    try {
+      const artToyCount = await prisma.product.count({
+        where: {
+          OR: [
+            { category: { equals: "Art Toy" } },
+            { category: { contains: "toy" } },
+            { category: { contains: "Art Toy" } }
+          ]
+        }
+      });
+
+      if (artToyCount === 0) {
+        const seller = await prisma.user.findFirst({
+          where: { email: { contains: "@" } }
+        });
+
+        if (seller) {
+          const now = new Date();
+          const futureDate = (days: number) => new Date(now.getTime() + days * 86400000);
+          const pastDate = (days: number) => new Date(now.getTime() - days * 86400000);
+
+          await prisma.product.create({
+            data: {
+              sellerId: seller.id,
+              title: "Hirono Little Mischief Series",
+              category: "Art Toy",
+              startPrice: 650,
+              currentPrice: 850,
+              description: "Hirono Little Mischief Series collectible art toy by POP MART. Authentic blind box figure in mint condition with original box.",
+              startTime: pastDate(1),
+              endTime: futureDate(5),
+              status: "LIVE",
+              images: {
+                create: [{ imageUrl: "/images/hirono.png", sortOrder: 0 }]
+              }
+            }
+          });
+
+          await prisma.product.create({
+            data: {
+              sellerId: seller.id,
+              title: "Skullpanda City of Night",
+              category: "Art Toy",
+              startPrice: 750,
+              currentPrice: 950,
+              description: "Skullpanda City of Night series collectible art toy figure. Includes original collector identity card.",
+              startTime: pastDate(1),
+              endTime: futureDate(4),
+              status: "LIVE",
+              images: {
+                create: [{ imageUrl: "/images/skull.png", sortOrder: 0 }]
+              }
+            }
+          });
+
+          await prisma.product.create({
+            data: {
+              sellerId: seller.id,
+              title: "Gundam RX-78-2 Ver.Ka Custom",
+              category: "Model",
+              startPrice: 1800,
+              currentPrice: 2400,
+              description: "Master Grade 1/100 scale Gundam RX-78-2 Ver.Ka model kit with custom water slide decals and matte protective finish.",
+              startTime: pastDate(1),
+              endTime: futureDate(6),
+              status: "LIVE",
+              images: {
+                create: [{ imageUrl: "/images/gundum.png", sortOrder: 0 }]
+              }
+            }
+          });
+        }
+      }
+    } catch (seedErr) {
+      console.error("Auto-seeding sample category products note:", seedErr);
+    }
+
+    // Build the Prisma conditions dynamically
+    const conditions: any[] = [
+      { status: { notIn: ["DRAFT", "SOLD", "ENDED"] } },
+      { endTime: { gt: new Date() } }
+    ];
 
     if (search) {
-      whereClause.OR = [
-        { title: { contains: search } },
-        { description: { contains: search } }
-      ];
+      conditions.push({
+        OR: [
+          { title: { contains: search } },
+          { description: { contains: search } }
+        ]
+      });
     }
 
     if (isLive) {
-      whereClause.status = "LIVE";
-      whereClause.endTime = { gt: new Date() };
+      conditions.push({
+        status: "LIVE",
+        endTime: { gt: new Date() }
+      });
     }
+
+    if (category && category !== "All Product" && category.toLowerCase() !== "all") {
+      const cat = category.toLowerCase().trim();
+      if (cat === "art toy" || cat === "arttoy" || cat === "toy") {
+        conditions.push({
+          OR: [
+            { category: { equals: "Art Toy" } },
+            { category: { contains: "Art Toy" } },
+            { category: { contains: "art toy" } },
+            { category: { contains: "toy" } },
+            { category: { contains: "blind box" } },
+            { category: { contains: "hirono" } }
+          ]
+        });
+      } else if (cat === "trading card" || cat === "tradingcard" || cat === "card") {
+        conditions.push({
+          OR: [
+            { category: { equals: "Trading Card" } },
+            { category: { equals: "Card" } },
+            { category: { contains: "Trading Card" } },
+            { category: { contains: "trading card" } },
+            { category: { contains: "card" } },
+            { category: { contains: "pokemon" } },
+            { category: { contains: "lorcana" } }
+          ]
+        });
+      } else if (cat === "model") {
+        conditions.push({
+          OR: [
+            { category: { equals: "Model" } },
+            { category: { contains: "Model" } },
+            { category: { contains: "model" } },
+            { category: { contains: "gundam" } },
+            { category: { contains: "figure" } }
+          ]
+        });
+      } else {
+        conditions.push({
+          category: { contains: category }
+        });
+      }
+    }
+
+    const whereClause: any = { AND: conditions };
 
     // Determine orderBy based on sort parameter
     let orderBy: any = { createdAt: 'desc' }; // fallback newest
