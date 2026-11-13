@@ -145,7 +145,7 @@ export default function ChaosAdmin() {
     { 
       id: 'cpu', 
       label: 'Simulate High CPU Load', 
-      desc: 'Auto Scaling Trigger (Multi-core worker burn)', 
+      desc: 'Auto Scaling Trigger (Runs for up to 3.5 mins or click Stop anytime)', 
       icon: Cpu, 
       color: 'text-orange-500', 
       bg: 'bg-orange-100',

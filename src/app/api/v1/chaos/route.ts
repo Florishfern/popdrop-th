@@ -92,8 +92,8 @@ export async function POST(req: Request) {
         const workerScript = `
           const crypto = require('crypto');
           const start = Date.now();
-          // Burn CPU for up to 60 seconds
-          while (Date.now() - start < 60000) {
+          // Burn CPU for up to 210 seconds (3.5 minutes - allows AWS Auto-Scaling to trigger after 3 periods)
+          while (Date.now() - start < 210000) {
             crypto.pbkdf2Sync('password', 'salt', 50000, 64, 'sha512');
           }
           require('worker_threads').parentPort.postMessage('done');
@@ -117,11 +117,11 @@ export async function POST(req: Request) {
           data: { isCpuBurning: true }
         });
 
-        const msg = `Triggered High CPU Load on ${numCores} cores (Auto-Scaling alarm test for 60s)`;
-        await recordLog("cpu", "start", msg, `Cores: ${numCores}, Duration: 60s`);
+        const msg = `Triggered High CPU Load on ${numCores} cores (Auto-Scaling live test: up to 3.5 mins or click Stop anytime)`;
+        await recordLog("cpu", "start", msg, `Cores: ${numCores}, Duration: up to 210s`);
         sendSnsIncidentReport("TRIGGERED", "High CPU Load (Auto-Scaling)", msg);
 
-        // Auto-stop after 60 seconds
+        // Auto-stop after 210 seconds (3.5 minutes) if operator does not stop it manually
         global.__chaosCpuTimeout = setTimeout(async () => {
           if (global.__chaosCpuWorkers) {
             global.__chaosCpuWorkers.forEach(w => {
@@ -134,10 +134,10 @@ export async function POST(req: Request) {
               where: { id: "global" },
               data: { isCpuBurning: false }
             });
-            await recordLog("cpu", "auto-end", "High CPU simulation finished automatically (60s elapsed). CPU load normalized.");
-            sendSnsIncidentReport("RESOLVED", "High CPU Load (Auto-Scaling)", "High CPU simulation finished automatically (60s elapsed). CPU load normalized back to healthy (Self-Healed 100%).");
+            await recordLog("cpu", "auto-end", "High CPU simulation finished automatically (3.5 minutes elapsed). CPU load normalized.");
+            sendSnsIncidentReport("RESOLVED", "High CPU Load (Auto-Scaling)", "High CPU simulation finished automatically (3.5 minutes elapsed). CPU load normalized back to healthy (Self-Healed 100%).");
           } catch {}
-        }, 60000);
+        }, 210000);
 
         return NextResponse.json({ message: msg });
       } else {
