@@ -44,6 +44,7 @@ Dev Team Recipients: 67050820@kmitl.ac.th, 67050466@kmitl.ac.th
 declare global {
   var __chaosCpuWorkers: Worker[] | undefined;
   var __chaosCpuTimeout: NodeJS.Timeout | undefined;
+  var __isAppFrozen: boolean | undefined;
   var __chaosFreezeTimeout: NodeJS.Timeout | undefined;
   var __chaosDiskTimeout: NodeJS.Timeout | undefined;
   var __chaosDefaceTimeout: NodeJS.Timeout | undefined;
@@ -239,7 +240,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // 3. APP FREEZE SCENARIO
+    // 3. APP FREEZE SCENARIO (Single-Container Freeze for True HA & Zero Downtime)
     if (type === "freeze") {
       const isStart = action === "start";
 
@@ -248,19 +249,24 @@ export async function POST(req: Request) {
         global.__chaosFreezeTimeout = undefined;
       }
 
+      // Freeze ONLY this specific container in-memory
+      global.__isAppFrozen = isStart;
+
+      // Update DB state so Admin UI toggle reflects active scenario
       await prisma.chaosState.update({
         where: { id: "global" },
         data: { isAppFrozen: isStart }
       });
 
       if (isStart) {
-        const msg = "App Freeze Activated: /api/health returns 500 Unhealthy to trigger ALB Target Draining (Self-healing in 90s)";
-        await recordLog("freeze", "start", msg, "Target Group will transition to Unhealthy. Self-heals in 90 seconds.");
-        sendSnsIncidentReport("TRIGGERED", "Application Freeze", msg);
+        const msg = "App Freeze Activated on Container: /api/health on this node returns 500 Unhealthy. Peer container remains Healthy (Zero Downtime). ALB drains and ECS auto-replaces container.";
+        await recordLog("freeze", "start", msg, "Target Group will transition 1 target to Unhealthy. Peer remains Healthy.");
+        sendSnsIncidentReport("TRIGGERED", "Application Freeze (Single-Node HA Test)", msg);
 
         // Auto-recover after 90 seconds (Self-Healing simulation)
         global.__chaosFreezeTimeout = setTimeout(async () => {
           try {
+            global.__isAppFrozen = false;
             await prisma.chaosState.update({
               where: { id: "global" },
               data: { isAppFrozen: false }
@@ -268,9 +274,9 @@ export async function POST(req: Request) {
             await recordLog(
               "freeze",
               "auto-end",
-              "App Freeze simulation completed (90s elapsed). Container replacement / Health check self-healed back to 200 Healthy."
+              "App Freeze simulation completed (90s elapsed). ECS container replacement / Health check self-healed back to 200 Healthy."
             );
-            sendSnsIncidentReport("RESOLVED", "Application Freeze", "App Freeze simulation completed (90s elapsed). Container replacement / Health check self-healed back to 200 Healthy (Self-Healed 100%).");
+            sendSnsIncidentReport("RESOLVED", "Application Freeze (Single-Node HA Test)", "App Freeze simulation completed (90s elapsed). ECS replaced unhealthy container; cluster fully healthy (Self-Healed 100%).");
           } catch (err) {
             console.error("Failed to auto-heal app freeze:", err);
           }
@@ -278,9 +284,10 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ message: msg });
       } else {
+        global.__isAppFrozen = false;
         const msg = "App Freeze Deactivated manually: /api/health restored to 200 Healthy";
         await recordLog("freeze", "stop", msg);
-        sendSnsIncidentReport("RESOLVED", "Application Freeze", msg + " (Self-Healed 100%).");
+        sendSnsIncidentReport("RESOLVED", "Application Freeze (Single-Node HA Test)", msg + " (Self-Healed 100%).");
         return NextResponse.json({ message: msg });
       }
     }
