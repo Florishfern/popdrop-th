@@ -33,6 +33,7 @@ import {
   IdCard,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
   UploadCloud,
   Loader2,
   X
@@ -41,8 +42,13 @@ import {
 export default function ProfileClient() {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
+  const alertParam = searchParams.get("alert");
+  const [sellerAlert, setSellerAlert] = useState(alertParam === "seller_verification_required");
 
   const [activeTab, setActiveTab] = useState(() => {
+    if (alertParam === "seller_verification_required") {
+      return "Verification";
+    }
     if (tabParam) {
       const lower = tabParam.toLowerCase();
       if (lower === "transactions" || lower === "transaction" || lower === "orders") {
@@ -61,6 +67,11 @@ export default function ProfileClient() {
   });
 
   useEffect(() => {
+    if (alertParam === "seller_verification_required") {
+      setActiveTab("Verification");
+      setSellerAlert(true);
+      return;
+    }
     if (tabParam) {
       const lower = tabParam.toLowerCase();
       if (lower === "transactions" || lower === "transaction" || lower === "orders") {
@@ -77,7 +88,7 @@ export default function ProfileClient() {
         setActiveTab("Edit Profile");
       }
     }
-  }, [tabParam]);
+  }, [tabParam, alertParam]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
@@ -599,6 +610,31 @@ export default function ProfileClient() {
             {/* Verification Tab */}
             {activeTab === "Verification" && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                {sellerAlert && (
+                  <div className="mb-6 p-5 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/5 border border-amber-300 rounded-2xl shadow-sm flex items-start justify-between gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="flex items-start gap-3.5">
+                      <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+                        <AlertTriangle size={20} />
+                      </div>
+                      <div>
+                        <h4 className="font-extrabold text-amber-950 text-sm sm:text-base">
+                          ต้องยืนยันตัวตนก่อนเข้าใช้งานหน้าผู้ขาย (Seller)
+                        </h4>
+                        <p className="text-xs sm:text-sm text-amber-900 font-medium mt-1 leading-relaxed">
+                          คุณยังไม่ได้ยืนยันเบอร์โทรศัพท์หรืออัปโหลดเอกสารประจำตัว (KYC) กรุณาดำเนินการด้านล่างนี้ให้เรียบร้อย จึงจะสามารถเข้าสู่ระบบผู้ขายและเริ่มต้นลงขายสินค้าได้
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setSellerAlert(false)}
+                      className="text-amber-800 hover:text-black p-1.5 rounded-lg hover:bg-amber-100 transition-colors shrink-0"
+                      title="ปิดการแจ้งเตือน"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                )}
+                
                 <h1 className="text-2xl sm:text-3xl font-extrabold text-black mb-8">Identity Verification</h1>
                 
                 <div className="flex flex-col gap-6">

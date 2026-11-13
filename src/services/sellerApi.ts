@@ -5,6 +5,8 @@ export interface SellerStats {
   artToySales: number;
   modelSales: number;
   currency: string;
+  bankName?: string | null;
+  bankAccountNo?: string | null;
 }
 
 export interface SellerOrder {
@@ -314,6 +316,29 @@ export async function createProduct(
       throw err;
     }
     throw new Error(errorData?.message || errorData?.error || `Failed to create product: ${res.statusText}`);
+  }
+
+  return res.json();
+}
+
+/**
+ * Update Seller Bank Account
+ */
+export async function updateSellerBank(
+  bankName: string,
+  bankAccountNo: string
+): Promise<{ success: boolean; message: string; bankName: string; bankAccountNo: string }> {
+  const res = await fetch("/api/v1/seller/bank", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ bankName, bankAccountNo }),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => null);
+    throw new Error(errorData?.error || errorData?.message || "Failed to update bank account");
   }
 
   return res.json();

@@ -18,7 +18,8 @@ import {
   EyeOff,
   Truck,
   RefreshCw,
-  Search
+  Search,
+  Edit3
 } from "lucide-react";
 import { 
   getSellerStats, 
@@ -32,6 +33,7 @@ import SellerDashboardSkeleton from "./SellerDashboardSkeleton";
 import AddProductModal from "./AddProductModal";
 import UpdateTrackingModal from "./UpdateTrackingModal";
 import WithdrawModal from "./WithdrawModal";
+import BankModal from "./BankModal";
 import Toast, { ToastMessage } from "@/components/ui/Toast";
 import { useSellerRealtime } from "@/hooks/useSellerRealtime";
 
@@ -44,7 +46,9 @@ export default function SellerDashboard() {
   // UI States
   const [showAccount, setShowAccount] = useState(false);
   const [timeframe, setTimeframe] = useState<"Day" | "Month" | "Year">("Month");
-  const accountNumber = "089-2-54912-3";
+  const [isBankModalOpen, setIsBankModalOpen] = useState(false);
+  const [bankName, setBankName] = useState<string | null>(null);
+  const [bankAccountNo, setBankAccountNo] = useState<string | null>(null);
 
   // Search & Filter
   const [searchTerm, setSearchTerm] = useState("");
@@ -80,6 +84,10 @@ export default function SellerDashboard() {
       ]);
       setStats(statsData);
       setOrders(ordersData);
+      if (statsData.bankAccountNo) {
+        setBankAccountNo(statsData.bankAccountNo);
+        setBankName(statsData.bankName || "Kasikorn Bank (ธนาคารกสิกรไทย)");
+      }
     } catch (err: unknown) {
       console.error("SellerDashboard API Error:", err);
       const errorMessage = err instanceof Error ? err.message : "Failed to load seller dashboard data";
@@ -182,6 +190,19 @@ export default function SellerDashboard() {
         onError={(msg) => addToast("error", msg)}
       />
 
+      <BankModal
+        isOpen={isBankModalOpen}
+        onClose={() => setIsBankModalOpen(false)}
+        currentBankName={bankName}
+        currentAccountNo={bankAccountNo}
+        onSuccess={(newBankName, newAccountNo) => {
+          setBankName(newBankName);
+          setBankAccountNo(newAccountNo);
+          addToast("success", "บันทึกบัญชีธนาคารเรียบร้อยแล้ว สามารถลงขายสินค้าได้ทันที!");
+          fetchData();
+        }}
+      />
+
       <UpdateTrackingModal
         isOpen={!!selectedOrderForTracking}
         orderId={selectedOrderForTracking?.id || null}
@@ -250,37 +271,68 @@ export default function SellerDashboard() {
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs sm:text-sm font-bold text-black">Bank Account</span>
-                  <span className="text-[10px] sm:text-xs text-emerald-600 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full">Connect</span>
+                  {bankAccountNo ? (
+                    <span className="text-[10px] sm:text-xs text-emerald-600 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full">
+                      เชื่อมต่อแล้ว
+                    </span>
+                  ) : (
+                    <span className="text-[10px] sm:text-xs text-amber-600 font-bold bg-amber-50 px-2.5 py-0.5 rounded-full">
+                      ยังไม่ได้เชื่อมต่อ
+                    </span>
+                  )}
                 </div>
                 
-                <div className="w-full border border-neutral-200 rounded-2xl p-3.5 sm:p-4 bg-gradient-to-r from-emerald-50/50 to-teal-50/30 shadow-sm relative">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-8 h-8 bg-emerald-600 rounded-xl flex items-center justify-center text-white font-black text-sm shadow-sm shrink-0">
-                        K
+                {bankAccountNo ? (
+                  <div className="w-full border border-neutral-200 rounded-2xl p-3.5 sm:p-4 bg-gradient-to-r from-emerald-50/50 to-teal-50/30 shadow-sm relative">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 bg-emerald-600 rounded-xl flex items-center justify-center text-white font-black text-xs shadow-sm shrink-0">
+                          {bankName?.charAt(0) || "B"}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-xs font-extrabold text-black truncate">{bankName || "Kasikorn Bank"}</div>
+                          <div className="text-[10px] text-neutral-500 font-medium truncate">บัญชีรับเงินโอน</div>
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <div className="text-xs font-extrabold text-black truncate">Kasikorn Bank</div>
-                        <div className="text-[10px] text-neutral-500 font-medium truncate">ธนาคารกสิกรไทย</div>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button 
+                          onClick={() => setIsBankModalOpen(true)}
+                          className="px-2 py-1 hover:bg-white/80 rounded-lg text-neutral-600 hover:text-black text-xs font-bold transition-colors flex items-center gap-1"
+                          title="แก้ไขบัญชีธนาคาร"
+                        >
+                          <Edit3 size={13} /> แก้ไข
+                        </button>
+                        <button 
+                          onClick={() => setShowAccount(!showAccount)}
+                          className="p-1.5 hover:bg-white/80 rounded-lg text-neutral-500 hover:text-black transition-colors"
+                          title={showAccount ? "Hide Account Number" : "Show Account Number"}
+                        >
+                          {showAccount ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
                       </div>
                     </div>
 
-                    <button 
-                      onClick={() => setShowAccount(!showAccount)}
-                      className="p-1.5 hover:bg-white/80 rounded-lg text-neutral-500 hover:text-black transition-colors shrink-0"
-                      title={showAccount ? "Hide Account Number" : "Show Account Number"}
+                    <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-emerald-100">
+                      <span className="text-[10px] sm:text-xs text-neutral-500 font-medium">Account No.</span>
+                      <span className="font-mono text-xs sm:text-sm font-extrabold tracking-wider text-black">
+                        {showAccount ? bankAccountNo : (bankAccountNo.length > 4 ? `***-*-***${bankAccountNo.slice(-3)}` : "***-*-*****-*")}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="w-full border border-dashed border-neutral-300 rounded-2xl p-4 bg-neutral-50/80 text-center">
+                    <p className="text-xs font-medium text-neutral-600 mb-3">
+                      ยังไม่มีบัญชีธนาคารสำหรับรับเงินจากการขาย
+                    </p>
+                    <button
+                      onClick={() => setIsBankModalOpen(true)}
+                      className="w-full py-2.5 px-4 bg-black hover:bg-neutral-800 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-98"
                     >
-                      {showAccount ? <EyeOff size={16} /> : <Eye size={16} />}
+                      <Plus size={15} /> เพิ่มบัญชีธนาคาร
                     </button>
                   </div>
-
-                  <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-emerald-100">
-                    <span className="text-[10px] sm:text-xs text-neutral-500 font-medium">Account No.</span>
-                    <span className="font-mono text-xs sm:text-sm font-extrabold tracking-wider text-black">
-                      {showAccount ? accountNumber : "***-*-*****-*"}
-                    </span>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>

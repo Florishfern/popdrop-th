@@ -101,13 +101,13 @@ export default function AddProductModal({ isOpen, onClose, onSuccess, onError }:
       if (err.missingRequirements) {
         const reqs = err.missingRequirements as string[];
         const translations: Record<string, string> = {
-          "phone_verified": "ยืนยันเบอร์โทรศัพท์",
-          "credit_card": "ผูกบัตรเครดิต",
-          "identity_verified": "ยืนยันเอกสารประจำตัว (KYC)",
-          "bank_account": "เพิ่มบัญชีธนาคารสำหรับถอนเงิน"
+          "phone_verified": "ยืนยันเบอร์โทรศัพท์ (ในหน้า Profile)",
+          "credit_card": "ผูกบัตรเครดิต (ในหน้า Profile)",
+          "identity_verified": "ยืนยันเอกสารประจำตัว KYC (ในหน้า Profile)",
+          "bank_account": "เพิ่มบัญชีธนาคาร (กดปุ่ม '+ เพิ่มบัญชีธนาคาร' ในหน้านี้)"
         };
         const msg = reqs.map((r) => translations[r] || r).join(", ");
-        onError(`ไม่สามารถลงขายได้ กรุณาทำรายการต่อไปนี้ให้เสร็จสิ้นในหน้า Profile: ${msg}`);
+        onError(`ไม่สามารถลงขายได้ กรุณาทำรายการต่อไปนี้ให้ครบถ้วน: ${msg}`);
       } else {
         const errorMessage = err instanceof Error ? err.message : "Failed to create product";
         onError(errorMessage);

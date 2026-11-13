@@ -102,6 +102,19 @@ export async function GET(req: Request) {
       }
     }
 
+    // Fetch seller bank info
+    const seller = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        sellerInfo: {
+          select: {
+            bankName: true,
+            bankAccountNo: true,
+          },
+        },
+      },
+    });
+
     return NextResponse.json({
       totalBalance,
       totalIncome,
@@ -109,6 +122,8 @@ export async function GET(req: Request) {
       artToySales,
       modelSales,
       currency: "THB",
+      bankName: seller?.sellerInfo?.bankName || null,
+      bankAccountNo: seller?.sellerInfo?.bankAccountNo || null,
     });
 
   } catch (error) {

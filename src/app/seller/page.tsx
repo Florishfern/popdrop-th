@@ -26,7 +26,7 @@ export default async function SellerPage() {
 
   if (!isPhoneVerified || !isKycVerified) {
     // Redirect them to profile so they can verify phone/document
-    redirect("/profile");
+    redirect("/profile?tab=Verification&alert=seller_verification_required");
   }
 
   return (
