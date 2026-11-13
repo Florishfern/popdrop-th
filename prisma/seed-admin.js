@@ -29,6 +29,18 @@ async function main() {
   });
 
   console.log(`✅ Admin account ensured in database: ${admin.email} (ID: ${admin.id}, Role: ${admin.role})`);
+
+  try {
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE Account 
+      MODIFY COLUMN refresh_token TEXT,
+      MODIFY COLUMN access_token TEXT,
+      MODIFY COLUMN id_token TEXT;
+    `);
+    console.log('✅ Account table columns verified for OAuth tokens (TEXT)');
+  } catch (err) {
+    // Ignore if not MySQL or columns already TEXT
+  }
 }
 
 main()

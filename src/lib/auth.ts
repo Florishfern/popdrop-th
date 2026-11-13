@@ -6,6 +6,8 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import prisma from "./prisma";
 import bcrypt from "bcryptjs";
 
+const isHttps = process.env.NEXTAUTH_URL?.startsWith("https://") ?? false;
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
@@ -13,7 +15,6 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.GOOGLE_CLIENT_ID || "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
       allowDangerousEmailAccountLinking: true,
-      checks: ["none"],
     }),
     CredentialsProvider({
       name: "Email and Password",
@@ -87,9 +88,34 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async redirect({ url, baseUrl }) {
-      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      // If url is login, signup, root, or contains error, always redirect to /market
+      if (
+        !url ||
+        url === "/" ||
+        url === "/login" ||
+        url === "/signup" ||
+        url === `${baseUrl}` ||
+        url === `${baseUrl}/` ||
+        url === `${baseUrl}/login` ||
+        url === `${baseUrl}/signup` ||
+        url.includes("error=")
+      ) {
+        return `${baseUrl}/market`;
+      }
+      if (url.startsWith("/")) {
+        if (url.startsWith("/login") || url.startsWith("/signup")) {
+          return `${baseUrl}/market`;
+        }
+        return `${baseUrl}${url}`;
+      }
       try {
-        if (new URL(url).origin === baseUrl) return url;
+        const parsed = new URL(url);
+        if (parsed.origin === baseUrl) {
+          if (parsed.pathname === "/" || parsed.pathname === "/login" || parsed.pathname === "/signup" || parsed.searchParams.has("error")) {
+            return `${baseUrl}/market`;
+          }
+          return url;
+        }
       } catch {
         // Invalid URL
       }
@@ -135,54 +161,6 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: "/login",
   },
-  cookies: {
-    sessionToken: {
-      name: "next-auth.session-token",
-      options: {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: false,
-      },
-    },
-    callbackUrl: {
-      name: "next-auth.callback-url",
-      options: {
-        sameSite: "lax",
-        path: "/",
-        secure: false,
-      },
-    },
-    csrfToken: {
-      name: "next-auth.csrf-token",
-      options: {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: false,
-      },
-    },
-    state: {
-      name: "next-auth.state",
-      options: {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: false,
-        maxAge: 900,
-      },
-    },
-    pkceCodeVerifier: {
-      name: "next-auth.pkce.code_verifier",
-      options: {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: false,
-        maxAge: 900,
-      },
-    },
-  },
-  useSecureCookies: false,
+  useSecureCookies: isHttps,
   secret: process.env.NEXTAUTH_SECRET || "popdrop_super_secret_key_12345",
 };

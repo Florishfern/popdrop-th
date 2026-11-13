@@ -38,6 +38,9 @@ jobs:
       - name: Switch Prisma to MySQL
         run: |
           sed -i 's/provider = "sqlite"/provider = "mysql"/g' prisma/schema.prisma
+          sed -i 's/refresh_token     String?/refresh_token     String?  @db.Text/g' prisma/schema.prisma
+          sed -i 's/access_token      String?/access_token      String?  @db.Text/g' prisma/schema.prisma
+          sed -i 's/id_token          String?/id_token          String?  @db.Text/g' prisma/schema.prisma
 
       # Build the Docker image locally
       - name: Build Docker image
