@@ -14,6 +14,7 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.GOOGLE_CLIENT_ID || "",
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
       allowDangerousEmailAccountLinking: true,
+      checks: ["none"],
     }),
     CredentialsProvider({
       name: "Email and Password",
@@ -107,6 +108,12 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
   },
   callbacks: {
+    async signIn({ user, account, profile }) {
+      if (account?.provider === "google") {
+        return true;
+      }
+      return true;
+    },
     async redirect({ url, baseUrl }) {
       // If url is login, signup, root, or contains error, always redirect to /market
       if (
